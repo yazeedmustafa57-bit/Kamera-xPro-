@@ -26,6 +26,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var usernameInput: EditText
     private lateinit var passwordInput: EditText
     private lateinit var connectButton: Button
+    private lateinit var standaloneButton: Button
     private lateinit var statusText: TextView
 
     companion object {
@@ -45,6 +46,28 @@ class MainActivity : AppCompatActivity() {
         connectButton = findViewById(R.id.connectButton)
         statusText = findViewById(R.id.statusText)
 
+        // Standalone-Button hinzufuegen (falls er nicht im Layout ist)
+        try {
+            standaloneButton = findViewById(R.id.standaloneButton)
+        } catch (e: Exception) {
+            // Button nicht im Layout - erstelle ihn dynamisch
+            standaloneButton = Button(this).apply {
+                text = "📷 Kamera starten (ohne Server)"
+                setTextColor(Color.WHITE)
+                setBackgroundColor(Color.parseColor("#22c55e"))
+                textSize = 14f
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    140
+                )
+                params.topMargin = 16
+                layoutParams = params
+            }
+            // Finde den LinearLayout und fuege Button hinzu
+            val parent = connectButton.parent as? LinearLayout
+            parent?.addView(standaloneButton, parent.indexOfChild(connectButton) + 1)
+        }
+
         val savedUrl = prefs.getString(Constants.PREF_SERVER_URL, "")
         if (!savedUrl.isNullOrEmpty()) {
             serverUrlInput.setText(savedUrl)
@@ -55,8 +78,9 @@ class MainActivity : AppCompatActivity() {
         usernameInput.setText(prefs.getString("username", ""))
 
         connectButton.setOnClickListener { connect() }
+        standaloneButton.setOnClickListener { startStandalone() }
 
-        showStatus("Server-URL eingeben und anmelden", false)
+        showStatus("Kamera starten oder mit Server verbinden", false)
         requestPermissions()
     }
 
@@ -120,6 +144,20 @@ class MainActivity : AppCompatActivity() {
             connectButton.isEnabled = true
             connectButton.text = "Anmelden"
         }
+    }
+
+    private fun startStandalone() {
+        val cameraName = cameraNameInput.text.toString().trim().ifEmpty { "Kamera 1" }
+        showSuccess("Kamera-Modus gestartet!")
+        
+        val intent = Intent(this, CameraActivity::class.java).apply {
+            putExtra("token", "standalone")
+            putExtra("camera_name", cameraName)
+            putExtra("camera_id", "standalone")
+            putExtra("server_url", "")
+        }
+        startActivity(intent)
+        finish()
     }
 
     private fun connect() {

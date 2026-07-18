@@ -18,13 +18,15 @@ import com.smartcampro.app.network.WebSocketClient
 import com.smartcampro.app.services.StreamingService
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
 
 class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
 
     private lateinit var cameraManager: CameraManager
     private lateinit var motionDetector: MotionDetector
-    private lateinit var webSocketClient: WebSocketClient
-    private lateinit var apiClient: ApiClient
+    private var webSocketClient: WebSocketClient? = null
+    private var apiClient: ApiClient? = null
 
     private lateinit var previewView: PreviewView
     private lateinit var statusText: TextView
@@ -39,15 +41,17 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     private var cameraName = ""
     private var cameraId = ""
     private var serverUrl = ""
+    private var isStandalone = false
     private var isConnected = false
     private var isRecording = false
     private var frameCount = 0
     private var lastFpsTime = System.currentTimeMillis()
+    private var motionCount = 0
 
     private val handler = Handler(Looper.getMainLooper())
     private val statusUpdateRunnable = object : Runnable {
         override fun run() {
-            if (isConnected) {
+            if (isConnected && !isStandalone) {
                 updateStatus()
                 handler.postDelayed(this, 10000)
             }
@@ -62,6 +66,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         cameraName = intent.getStringExtra("camera_name") ?: "Camera"
         cameraId = intent.getStringExtra("camera_id") ?: ""
         serverUrl = intent.getStringExtra("server_url") ?: ""
+        isStandalone = token == "standalone"
 
         previewView = findViewById(R.id.previewView)
         statusText = findViewById(R.id.statusText)
@@ -72,19 +77,15 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         recordButton = findViewById(R.id.recordButton)
         stopButton = findViewById(R.id.stopButton)
 
-        if (cameraId.isEmpty()) {
-            Toast.makeText(this, "Fehler: Keine Kamera-ID vorhanden", Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
-
         cameraManager = CameraManager(this)
         motionDetector = MotionDetector()
         motionDetector.setListener(this)
         motionDetector.setSensitivity(0.5f)
 
-        webSocketClient = WebSocketClient(serverUrl, cameraId, token)
-        apiClient = ApiClient(serverUrl)
+        if (!isStandalone) {
+            webSocketClient = WebSocketClient(serverUrl, cameraId, token)
+            apiClient = ApiClient(serverUrl)
+        }
 
         setupButtons()
         startStreaming()
@@ -101,35 +102,42 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     }
 
     private fun startStreaming() {
-        statusText.text = "Kamera startet..."
-        isConnected = true
-
-        webSocketClient.connect(object : WebSocketClient.Listener {
-            override fun onConnected() {
-                runOnUiThread {
-                    statusText.text = "● Live"
-                    statusText.setTextColor(getColor(android.R.color.holo_green_light))
+        if (isStandalone) {
+            statusText.text = "● Kamera aktiv (lokal)"
+            statusText.setTextColor(getColor(android.R.color.holo_green_light))
+            isConnected = true
+        } else {
+            statusText.text = "Verbinde mit Server..."
+            isConnected = true
+            webSocketClient?.connect(object : WebSocketClient.Listener {
+                override fun onConnected() {
+                    runOnUiThread {
+                        statusText.text = "● Live"
+                        statusText.setTextColor(getColor(android.R.color.holo_green_light))
+                    }
                 }
-            }
-            override fun onDisconnected() {
-                runOnUiThread {
-                    statusText.text = "● Getrennt"
-                    statusText.setTextColor(getColor(android.R.color.holo_red_light))
-                    isConnected = false
+                override fun onDisconnected() {
+                    runOnUiThread {
+                        statusText.text = "● Getrennt"
+                        statusText.setTextColor(getColor(android.R.color.holo_red_light))
+                        isConnected = false
+                    }
                 }
-            }
-            override fun onMessage(message: org.json.JSONObject) {
-                handleWebSocketMessage(message)
-            }
-            override fun onError(error: String) {
-                runOnUiThread {
-                    Toast.makeText(this@CameraActivity, "WS: $error", Toast.LENGTH_SHORT).show()
+                override fun onMessage(message: org.json.JSONObject) {
+                    handleWebSocketMessage(message)
                 }
-            }
-        })
+                override fun onError(error: String) {
+                    runOnUiThread {
+                        Toast.makeText(this@CameraActivity, "WS: $error", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            })
+        }
 
         startCameraPreview()
-        handler.postDelayed(statusUpdateRunnable, 10000)
+        if (!isStandalone) {
+            handler.postDelayed(statusUpdateRunnable, 10000)
+        }
 
         try {
             val serviceIntent = Intent(this, StreamingService::class.java)
@@ -158,23 +166,31 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
 
         motionDetector.processFrame(bitmap)
 
-        if (isConnected) {
+        if (isConnected && !isStandalone) {
             val base64 = cameraManager.bitmapToBase64(bitmap)
-            webSocketClient.sendFrame(base64)
+            webSocketClient?.sendFrame(base64)
         }
     }
 
     override fun onMotionDetected(confidence: Float) {
+        motionCount++
         runOnUiThread {
-            Toast.makeText(this, "Bewegung erkannt! (${(confidence * 100).toInt()}%)", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Bewegung #${motionCount}! (${(confidence * 100).toInt()}%)", Toast.LENGTH_SHORT).show()
+            statusText.text = "● Bewegung #${motionCount}"
+            statusText.setTextColor(getColor(android.R.color.holo_orange_light))
         }
-        webSocketClient.sendMotionDetected(confidence)
-        apiClient.sendMotionEvent(token, cameraId, "motion", confidence,
-            object : ApiClient.ApiCallback {
-                override fun onSuccess(response: String) {}
-                override fun onError(error: String) {}
-            }
-        )
+
+        if (!isStandalone) {
+            webSocketClient?.sendMotionDetected(confidence)
+            apiClient?.sendMotionEvent(token, cameraId, "motion", confidence,
+                object : ApiClient.ApiCallback {
+                    override fun onSuccess(response: String) {}
+                    override fun onError(error: String) {}
+                }
+            )
+        }
+
+        // Immer Screenshots bei Bewegung speichern
         cameraManager.takeScreenshot { bitmap -> bitmap?.let { saveScreenshot(it) } }
     }
 
@@ -206,7 +222,8 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     private fun saveScreenshot(bitmap: Bitmap) {
         try {
             val dir = File(filesDir, "screenshots").also { it.mkdirs() }
-            val file = File(dir, "screenshot_${System.currentTimeMillis()}.jpg")
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val file = File(dir, "screenshot_${timestamp}.jpg")
             FileOutputStream(file).use { out ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
             }
@@ -229,8 +246,8 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     private fun updateStatus() {
         val battery = getBatteryLevel()
         val wifi = getWifiSignal()
-        webSocketClient.sendStatus("streaming", battery, wifi)
-        apiClient.updateCameraStatus(token, cameraId, "streaming", battery, wifi,
+        webSocketClient?.sendStatus("streaming", battery, wifi)
+        apiClient?.updateCameraStatus(token, cameraId, "streaming", battery, wifi,
             object : ApiClient.ApiCallback {
                 override fun onSuccess(response: String) {}
                 override fun onError(error: String) {}
@@ -254,7 +271,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     private fun stopStreaming() {
         isConnected = false
         handler.removeCallbacks(statusUpdateRunnable)
-        webSocketClient.disconnect()
+        webSocketClient?.disconnect()
         cameraManager.shutdown()
         try { stopService(Intent(this, StreamingService::class.java)) } catch (_: Exception) {}
         finish()
