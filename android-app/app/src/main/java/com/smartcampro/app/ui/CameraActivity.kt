@@ -16,7 +16,6 @@ import com.smartcampro.app.detection.MotionDetector
 import com.smartcampro.app.network.ApiClient
 import com.smartcampro.app.network.WebSocketClient
 import com.smartcampro.app.services.StreamingService
-import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 
@@ -119,7 +118,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
                     isConnected = false
                 }
             }
-            override fun onMessage(message: JSONObject) {
+            override fun onMessage(message: org.json.JSONObject) {
                 handleWebSocketMessage(message)
             }
             override fun onError(error: String) {
@@ -172,7 +171,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         webSocketClient.sendMotionDetected(confidence)
         apiClient.sendMotionEvent(token, cameraId, "motion", confidence,
             object : ApiClient.ApiCallback {
-                override fun onSuccess(response: JSONObject) {}
+                override fun onSuccess(response: String) {}
                 override fun onError(error: String) {}
             }
         )
@@ -221,6 +220,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
 
     private fun getWifiSignal(): Int {
         val wm = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
+        @Suppress("DEPRECATION")
         val info = wm.connectionInfo
         val level = WifiManager.calculateSignalLevel(info.rssi, 5)
         return (level * 100) / 4
@@ -232,14 +232,14 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         webSocketClient.sendStatus("streaming", battery, wifi)
         apiClient.updateCameraStatus(token, cameraId, "streaming", battery, wifi,
             object : ApiClient.ApiCallback {
-                override fun onSuccess(response: JSONObject) {}
+                override fun onSuccess(response: String) {}
                 override fun onError(error: String) {}
             }
         )
         runOnUiThread { batteryText.text = "Batterie: $battery%" }
     }
 
-    private fun handleWebSocketMessage(message: JSONObject) {
+    private fun handleWebSocketMessage(message: org.json.JSONObject) {
         when (message.optString("type", "")) {
             "command" -> when (message.optString("command", "")) {
                 "stop" -> stopStreaming()

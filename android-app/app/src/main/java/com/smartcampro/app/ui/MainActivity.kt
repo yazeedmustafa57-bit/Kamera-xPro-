@@ -13,6 +13,8 @@ import androidx.core.content.ContextCompat
 import com.smartcampro.app.R
 import com.smartcampro.app.network.ApiClient
 import com.smartcampro.app.utils.Constants
+import org.json.JSONArray
+import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
 
@@ -147,21 +149,29 @@ class MainActivity : AppCompatActivity() {
 
         apiClient = ApiClient(serverUrl)
         apiClient.login(username, password, object : ApiClient.ApiCallback {
-            override fun onSuccess(response: org.json.JSONObject) {
-                val token = response.getString("access_token")
+            override fun onSuccess(response: String) {
+                try {
+                    val json = JSONObject(response)
+                    val token = json.getString("access_token")
 
-                prefs.edit().apply {
-                    putString(Constants.PREF_SERVER_URL, serverUrl)
-                    putString(Constants.PREF_CAMERA_NAME, cameraName)
-                    putString(Constants.PREF_AUTH_TOKEN, token)
-                    putString("username", username)
-                    apply()
+                    prefs.edit().apply {
+                        putString(Constants.PREF_SERVER_URL, serverUrl)
+                        putString(Constants.PREF_CAMERA_NAME, cameraName)
+                        putString(Constants.PREF_AUTH_TOKEN, token)
+                        putString("username", username)
+                        apply()
+                    }
+
+                    showSuccess("Angemeldet! Kamera wird registriert...")
+                    registerCamera(token, cameraName)
+
+                } catch (e: Exception) {
+                    showError("Login fehlgeschlagen: ${e.message}")
+                    runOnUiThread {
+                        connectButton.isEnabled = true
+                        connectButton.text = "Anmelden"
+                    }
                 }
-
-                showSuccess("Angemeldet! Kamera wird registriert...")
-
-                // Step 2: Register camera with backend to get UUID
-                registerCamera(token, cameraName, serverUrl)
             }
 
             override fun onError(error: String) {
@@ -176,8 +186,6 @@ class MainActivity : AppCompatActivity() {
                         "Falscher Benutzername oder Passwort."
                     error.contains("403") ->
                         "Zugang verweigert. Account deaktiviert?"
-                    error.contains("ConnectException") ->
-                        "Verbindung moeglich. Server IP pruefen."
                     else -> "Verbindung fehlgeschlagen: $error"
                 }
                 showError(friendlyError)
@@ -186,16 +194,11 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun registerCamera(token: String, cameraName: String, serverUrl: String) {
-        // First try to find existing camera with same name
+    private fun registerCamera(token: String, cameraName: String) {
         apiClient.listCameras(token, object : ApiClient.ApiCallback {
-            override fun onSuccess(response: org.json.JSONObject) {
-                // Response is a JSON array of cameras
+            override fun onSuccess(response: String) {
                 try {
-                    val camerasArray = response.toString()
-                    // Try to find camera with matching name in the list
-                    // Since response might be an array, parse it
-                    val array = org.json.JSONArray(camerasArray)
+                    val array = JSONArray(response)
                     var foundCameraId: String? = null
                     for (i in 0 until array.length()) {
                         val cam = array.getJSONObject(i)
@@ -205,41 +208,49 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                     if (foundCameraId != null) {
-                        // Camera exists, use its UUID
                         prefs.edit().putString(Constants.PREF_CAMERA_ID, foundCameraId).apply()
                         showSuccess("Kamera verbunden! Starte Streaming...")
+                        val serverUrl = prefs.getString(Constants.PREF_SERVER_URL, "") ?: ""
                         startCameraActivity(token, cameraName, foundCameraId, serverUrl)
                     } else {
-                        // Camera not found, create new one
-                        createNewCamera(token, cameraName, serverUrl)
+                        createNewCamera(token, cameraName)
                     }
                 } catch (e: Exception) {
-                    // Response is a single object, create new camera
-                    createNewCamera(token, cameraName, serverUrl)
+                    createNewCamera(token, cameraName)
                 }
             }
 
             override fun onError(error: String) {
-                // List failed, try creating camera
-                createNewCamera(token, cameraName, serverUrl)
+                createNewCamera(token, cameraName)
             }
         })
     }
 
-    private fun createNewCamera(token: String, cameraName: String, serverUrl: String) {
+    private fun createNewCamera(token: String, cameraName: String) {
         apiClient.registerCamera(token, cameraName, object : ApiClient.ApiCallback {
-            override fun onSuccess(response: org.json.JSONObject) {
-                val cameraId = response.getString("id")
-                prefs.edit().putString(Constants.PREF_CAMERA_ID, cameraId).apply()
-                showSuccess("Kamera registriert! Starte Streaming...")
-                startCameraActivity(token, cameraName, cameraId, serverUrl)
+            override fun onSuccess(response: String) {
+                try {
+                    val json = JSONObject(response)
+                    val cameraId = json.getString("id")
+                    prefs.edit().putString(Constants.PREF_CAMERA_ID, cameraId).apply()
+                    showSuccess("Kamera registriert! Starte Streaming...")
+                    val serverUrl = prefs.getString(Constants.PREF_SERVER_URL, "") ?: ""
+                    startCameraActivity(token, cameraName, cameraId, serverUrl)
+                } catch (e: Exception) {
+                    showError("Kamera-Registrierung fehlgeschlagen: ${e.message}")
+                    runOnUiThread {
+                        connectButton.isEnabled = true
+                        connectButton.text = "Anmelden"
+                    }
+                }
             }
 
             override fun onError(error: String) {
                 showError("Kamera-Registrierung fehlgeschlagen: $error")
-                Toast.makeText(this@MainActivity, "Kamera konnte nicht registriert werden: $error", Toast.LENGTH_LONG).show()
-                connectButton.isEnabled = true
-                connectButton.text = "Anmelden"
+                runOnUiThread {
+                    connectButton.isEnabled = true
+                    connectButton.text = "Anmelden"
+                }
             }
         })
     }
