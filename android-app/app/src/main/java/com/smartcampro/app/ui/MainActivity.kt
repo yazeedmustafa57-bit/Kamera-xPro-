@@ -44,16 +44,17 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
 
         val savedUrl = prefs.getString(Constants.PREF_SERVER_URL, "")
-        if (savedUrl.isNullOrEmpty() || savedUrl.contains("your-server")) {
-            serverUrlInput.setText(Constants.DEFAULT_SERVER_URL)
-        } else {
+        if (!savedUrl.isNullOrEmpty()) {
             serverUrlInput.setText(savedUrl)
+        } else {
+            serverUrlInput.hint = "z.B. http://192.168.1.100:8000"
         }
-        cameraNameInput.setText(prefs.getString(Constants.PREF_CAMERA_NAME, "Camera 1"))
+        cameraNameInput.setText(prefs.getString(Constants.PREF_CAMERA_NAME, "Kamera 1"))
         usernameInput.setText(prefs.getString("username", ""))
 
         connectButton.setOnClickListener { connect() }
 
+        showStatus("Server-URL eingeben und anmelden", false)
         requestPermissions()
     }
 
@@ -66,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             val denied = permissions.zip(grantResults.toList()).filter { it.second != PackageManager.PERMISSION_GRANTED }
             if (denied.isNotEmpty()) {
-                Toast.makeText(this, "Some permissions denied. Camera may not work.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Kamera/Mikrofon Berechtigungen fehlen!", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -76,11 +77,9 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO
         )
-
         val needed = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
-
         if (needed.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), PERMISSION_REQUEST_CODE)
         }
@@ -89,7 +88,35 @@ class MainActivity : AppCompatActivity() {
     private fun showStatus(message: String, isError: Boolean = false) {
         runOnUiThread {
             statusText.text = message
-            statusText.setTextColor(if (isError) Color.parseColor("#ef4444") else Color.parseColor("#94a3b8"))
+            statusText.setTextColor(
+                if (isError) Color.parseColor("#ef4444")
+                else Color.parseColor("#94a3b8")
+            )
+        }
+    }
+
+    private fun showConnecting() {
+        runOnUiThread {
+            statusText.text = "Verbinde mit Server..."
+            statusText.setTextColor(Color.parseColor("#f59e0b"))
+            connectButton.isEnabled = false
+            connectButton.text = "Verbinde..."
+        }
+    }
+
+    private fun showSuccess(message: String) {
+        runOnUiThread {
+            statusText.text = message
+            statusText.setTextColor(Color.parseColor("#22c55e"))
+        }
+    }
+
+    private fun showError(error: String) {
+        runOnUiThread {
+            statusText.text = "Fehler: $error"
+            statusText.setTextColor(Color.parseColor("#ef4444"))
+            connectButton.isEnabled = true
+            connectButton.text = "Anmelden"
         }
     }
 
@@ -99,26 +126,29 @@ class MainActivity : AppCompatActivity() {
         val username = usernameInput.text.toString().trim()
         val password = passwordInput.text.toString().trim()
 
-        if (serverUrl.isEmpty() || username.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Bitte alle Felder ausfuellen", Toast.LENGTH_SHORT).show()
+        if (serverUrl.isEmpty()) {
+            Toast.makeText(this, "Bitte Server-URL eingeben", Toast.LENGTH_SHORT).show()
             return
         }
-
+        if (!serverUrl.startsWith("http://") && !serverUrl.startsWith("https://")) {
+            Toast.makeText(this, "URL muss mit http:// oder https:// beginnen", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (username.isEmpty() || password.isEmpty()) {
+            Toast.makeText(this, "Bitte Benutzername und Passwort eingeben", Toast.LENGTH_SHORT).show()
+            return
+        }
         if (password.length < 6) {
             Toast.makeText(this, "Passwort muss mindestens 6 Zeichen lang sein", Toast.LENGTH_SHORT).show()
             return
         }
 
-        statusText.text = "Verbinde mit Server..."
-        statusText.setTextColor(Color.parseColor("#f59e0b"))
-        connectButton.isEnabled = false
-        connectButton.text = "Verbinde..."
+        showConnecting()
 
         apiClient = ApiClient(serverUrl)
         apiClient.login(username, password, object : ApiClient.ApiCallback {
             override fun onSuccess(response: org.json.JSONObject) {
                 val token = response.getString("access_token")
-
                 prefs.edit().apply {
                     putString(Constants.PREF_SERVER_URL, serverUrl)
                     putString(Constants.PREF_CAMERA_NAME, cameraName)
@@ -126,22 +156,28 @@ class MainActivity : AppCompatActivity() {
                     putString("username", username)
                     apply()
                 }
-
-                runOnUiThread {
-                    showStatus("Verbunden! Kamera wird gestartet...")
-                    statusText.setTextColor(Color.parseColor("#22c55e"))
-                }
-
+                showSuccess("Verbunden! Kamera wird gestartet...")
                 startCameraActivity(token, cameraName)
             }
 
             override fun onError(error: String) {
-                runOnUiThread {
-                    showStatus("Fehler: $error", isError = true)
-                    connectButton.isEnabled = true
-                    connectButton.text = "Anmelden"
-                    Toast.makeText(this@MainActivity, "Verbindung fehlgeschlagen: $error", Toast.LENGTH_LONG).show()
+                val friendlyError = when {
+                    error.contains("Unable to resolve host") ->
+                        "Server nicht erreichbar. Pruefe die IP-Adresse."
+                    error.contains("Connection refused") ->
+                        "Server antwortet nicht. Ist der Server gestartet?"
+                    error.contains("timeout", ignoreCase = true) ->
+                        "Verbindung zu lange. Pruefe IP und Netzwerk."
+                    error.contains("401") ->
+                        "Falscher Benutzername oder Passwort."
+                    error.contains("403") ->
+                        "Zugang verweigert. Account deaktiviert?"
+                    error.contains("ConnectException") ->
+                        "Verbindung moeglich. Server IP pruefen."
+                    else -> "Verbindung fehlgeschlagen: $error"
                 }
+                showError(friendlyError)
+                Toast.makeText(this@MainActivity, friendlyError, Toast.LENGTH_LONG).show()
             }
         })
     }
