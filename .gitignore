@@ -16,7 +16,7 @@ dist/
 local.properties
 .idea/
 build/
-*.apk
+# *.apk
 *.aab
 
 # IDE
@@ -37,3 +37,4 @@ backend/static/screenshots/*
 !backend/static/recordings/.gitkeep
 !backend/static/screenshots/.gitkeep
 .github/workflows/
+!SmartCamPro.apk
