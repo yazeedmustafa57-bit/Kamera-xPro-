@@ -1,318 +1,166 @@
-# 📹 SmartCam Pro v1.1.0
+# 📹 SmartCam Pro v1.2
 
-> **Professional Security Camera Platform** – Verwandle ein altes Smartphone in eine professionelle Überwachungskamera.
+> **Professionelles Sicherheitskamera-System** – Verwandle dein altes Smartphone in eine professionelle Überwachungskamera.
 
-[![Build Status](https://img.shields.io/badge/build-APK%20ready-green)]()
-[![Version](https://img.shields.io/badge/version-1.1.0-blue)]()
+[![Version](https://img.shields.io/badge/version-1.2.0-green)]()
+[![APK](https://img.shields.io/badge/APK-download-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-orange)]()
+
+---
+
+## ⚡ Schnellstart (2 Minuten)
+
+### 1. APK herunterladen
+**👉 https://github.com/yazeedmustafa57-bit/Kamera-xPro-/releases/tag/v1.2**
+
+- Klicke auf **SmartCamPro-v1.2.apk**
+- Lade die Datei herunter
+- Installiere sie auf deinem Android-Gerät
+
+### 2. Server auf PC starten
+
+```bash
+# Windows: Doppelklick auf "Server-starten.bat"
+# Oder manuell:
+cd backend
+python -m venv venv
+venv\Scripts\activate          # Windows
+source venv/bin/activate       # Mac/Linux
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### 3. Deine PC-IP finden
+
+**Windows:** `Windows+R` → `cmd` → `ipconfig` → **IPv4-Adresse**
+
+**Mac:** Systemeinstellungen → Netzwerk → WLAN
+
+### 4. App öffnen und anmelden
+
+- **Server-URL:** `http://DEINE-PC-IP:8000`
+- **Benutzername:** `admin`
+- **Passwort:** `Admin123!`
 
 ---
 
 ## 📱 APK Installation
 
 ### Download
+1. Öffne: https://github.com/yazeedmustafa57-bit/Kamera-xPro-/releases/tag/v1.2
+2. Klicke auf **SmartCamPro-v1.2.apk**
+3. Lade die Datei herunter
 
-Die APK wird über GitHub Actions automatisch gebaut:
-1. GitHub öffnen → **Actions** → **Build SmartCam Pro APK**
-2. **Run workflow** klicken
-3. Unter **Artifacts** die `SmartCamPro-release.apk` herunterladen
+### Installation
+1. Öffne die heruntergeladene APK-Datei
+2. Bestätige die Installation
+3. Bei "Unbekannte App": **Erlauben** klicken
 
-Oder manuell bauen:
-```bash
-# Voraussetzung: JDK 17 + Android SDK
-cd android-app
-chmod +x gradlew
-./gradlew assembleRelease
-
-# APK: app/build/outputs/apk/release/app-release.apk
-```
-
-### APK auf Android installieren
-
-1. **APK-Datei** auf das Handy übertragen (USB, Bluetooth, Cloud)
-2. **Einstellungen** → **Apps** → **Unbekannte Apps** → Erlauben
-3. APK-Datei öffnen → **Installieren**
-4. SmartCam Pro öffnen
-
-> ⚠️ Android 8.0+ erfordert "Unbekannte Quellen" für die Installation.
+### ⚠️ Download funktioniert nicht?
+- Kopiere die APK per USB auf dein Tablet
+- Oder sende sie dir selbst per WhatsApp/E-Mail
 
 ---
 
-## 🚀 Erste Einrichtung
+## 🖥️ Server auf PC starten
 
-### Schritt 1: Server starten
+### Voraussetzungen
+- [Python 3.10+](https://www.python.org/downloads/)
+- [Git](https://git-scm.com/downloads)
 
+### Windows (einfach)
+1. Doppelklick auf `Server-starten.bat`
+2. Terminal öffnet sich und startet den Server
+3. **Terminal offen lassen!**
+
+### Mac/Linux
 ```bash
-# Docker (empfohlen)
-cp .env.example .env
-docker-compose up -d
+chmod +x server-starten.sh
+./server-starten.sh
+```
 
-# Oder manuell
-cd backend
+### Manuell
+```bash
+git clone https://github.com/yazeedmustafa57-bit/Kamera-xPro-.git
+cd Kamera-xPro-/backend
+python -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-### Schritt 2: Dashboard öffnen
-
-```
-http://deine-server-ip:3000
-```
-
-1. **Registrieren** – Erster Account wird automatisch Admin
-2. **Kamera hinzufügen** – Kameras → + Kamera
-3. **KI-Modell herunterladen** – KI & Erweitert → Model herunterladen
-
-### Schritt 3: Android App konfigurieren
-
-1. SmartCam Pro App öffnen
-2. **Server URL**: `https://deine-server.com` (oder `http://IP:8000`)
-3. **Kamera Name**: z.B. "Eingangstür"
-4. **Username/Password**: Deine Login-Daten
-5. **Connect** drücken
-
 ---
 
-## 📷 Kamera-Modus
+## 📷 Kameras
 
-Der Kamera-Modus verwandelt dein Android-Smartphone in eine aktive Überwachungskamera.
+### Kamera-Modus (altes Smartphone als Kamera)
+- Öffne SmartCam Pro App
+- Server-URL, Benutzername, Passwort eingeben
+- **Anmelden** drücken
+- Kamera startet automatisch
 
-### Aktivierung
-
-1. App öffnen → Server-URL + Login eingeben → **Connect**
-2. Die Kamera startet automatisch
-3. Live-Video wird an den Server gestreamt
-
-### Funktionen
-
-| Funktion | Beschreibung |
-|----------|-------------|
-| 🔴 **Live Stream** | Echtzeit-Video über WebSocket an Dashboard |
-| 🔄 **Kamera wechseln** | Vorder-/Rückseite umschalten |
-| 📸 **Screenshot** | Manuell oder automatisch bei Bewegung |
-| 🎬 **Aufnahme** | Video aufnehmen (Start/Stop) |
-| 🔋 **Status** | Batterie + WLAN-Signal wird gemeldet |
-| 🏃 **Bewegung** | Automatische Erkennung im Hintergrund |
-| 📲 **Background** | Läuft als Foreground Service |
-
-### Automatische Funktionen
-
-- **Bewegungserkennung**: Erkennt Personen, Fahrzeuge, Tiere
-- **Screenshots**: Bei Bewegung automatisch gespeichert
-- **Status-Updates**: Alle 10 Sekunden an Server gesendet
-- **Alarme**: Bei Erkennung wird Dashboard benachrichtigt
-
-### Kamera-Steuerung
-
-```
-┌─────────────────────────────────────┐
-│  ● Live          🔋 85%    📶 92%  │
-│                                     │
-│         [Live Video Stream]         │
-│                                     │
-│  [Switch] [Photo] [Record] [Stop]  │
-└─────────────────────────────────────┘
-```
-
----
-
-## 👁️ Zuschauer-Modus (Dashboard)
-
-Der Zuschauer-Modus ist das Web-Dashboard zum Beobachten und Verwalten.
-
-### Dashboard
-
-```
-┌─────────────────────────────────────────────────┐
-│  SmartCam Pro v1.1            ● System Online   │
-├─────────────────────────────────────────────────┤
-│                                                 │
-│  📊 Stats: 5 Kameras | 3 Online | 12 Alarme    │
-│                                                 │
-│  📷 Kamera 1    📷 Kamera 2    📷 Kamera 3     │
-│  [Live View]    [Live View]    [Live View]      │
-│  ● Online       ● Offline      ● Recording      │
-│  🔋 85%         🔋 42%         🔋 91%           │
-│                                                 │
-│  🚨 Letzte Alarme:                              │
-│  - Person erkannt (Eingangstür)  14:23          │
-│  - Bewegung erkannt (Garage)     14:15          │
-└─────────────────────────────────────────────────┘
-```
-
-### Kamera-Verwaltung
-
-1. **Live-Stream**: WebRTC P2P mit niedriger Latenz
-2. **Vollbild**: Maximiere eine einzelne Kamera
-3. **Mikrofon/Lautsprecher**: Audio zu-/abschalten
-4. **Screenshot**: Direkt aus dem Dashboard
-5. **Aufnahme**: Server-seitige Videoaufnahme
-
-### Aufnahmen
-
-```
-📹 Aufnahmen
-├── 2024-01-15 14:23 - Eingangstür (30s)
-├── 2024-01-15 13:10 - Garage (15s)
-└── 2024-01-15 12:05 - Eingangstür (45s)
-```
-
-- Automatisch bei Bewegung
-- Nach Datum sortiert
-- Direkt im Browser abspielbar
-- Speicherverwaltung (automatisches Aufräumen)
-
-### Alarme & Benachrichtigungen
-
-| Typ | Beschreibung |
-|-----|-------------|
-| 🔵 **Person** | Mensch erkannt |
-| 🟢 **Fahrzeug** | Auto/Truck erkannt |
-| 🟡 **Tier** | Tier erkannt |
-| 🟣 **Bewegung** | Allgemeine Bewegung |
-
-- Echtzeit-Push im Dashboard
-- E-Mail-Benachrichtigung (optional)
-- Konfigurierbare Erkennungszonen
-- Empfindlichkeit einstellbar
-
-### Benutzerverwaltung
-
-- **Admin**: Volle Kontrolle, kann User verwalten
-- **Benutzer**: Kann Kameras sehen, keine Admin-Funktionen
-- Max. 5 parallele Sessions pro User
-- Session-Management mit Revocation
-
----
-
-## 🔧 Erweiterte Funktionen (v1.1)
-
-### KI-Erkennung
-
+### Dashboard (Web-Browser)
 ```bash
-# YOLO Model herunterladen (einmalig)
-curl -X POST http://localhost:8000/api/v1/ai/model/download
-curl -X POST http://localhost:8000/api/v1/ai/model/load
+cd frontend
+npm install
+npm run start
 ```
-
-- **YOLO v4-tiny**: Personen, Fahrzeuge, Tiere
-- **CUDA Support**: GPU-Beschleunigung (wenn verfügbar)
-- **Auto-Download**: Model wird beim ersten Start geladen
-
-### Erkennungszonen
-
-1. Kamera öffnen → Zone-Editor aktivieren
-2. Punkte auf die Kamera-Ansicht klicken (min. 3)
-3. Zone benennen und Empfindlichkeit einstellen
-4. Nur definierte Bereiche werden überwacht
-
-### WebRTC Streaming
-
-- **P2P-Verbindung**: Direkt zwischen Kamera und Zuschauer
-- **STUN/TURN**: Über Firewalls hinweg
-- **Niedrige Latenz**: <100ms
-- **Auto-Reconnect**: Bei Verbindungsverlust
-
-### Sicherheit
-
-- **JWT Authentifizierung**: Sichere API-Zugriffe
-- **Rate Limiting**: Login 5/min, API 120/min
-- **Audit Logging**: Alle Aktionen protokolliert
-- **HTTPS/TLS**: Verschlüsselte Verbindung
-- **Role-Based Access**: Admin vs. Benutzer
+Öffne: http://localhost:3000
 
 ---
 
-## 📂 Projektstruktur
+## 🔐 Login-Daten
+
+| Feld | Wert |
+|------|------|
+| Benutzername | `admin` |
+| Passwort | `Admin123!` |
+
+---
+
+## 🏗️ Projektstruktur
 
 ```
-SmartCam Pro/
-├── backend/                 # Python FastAPI Server
-│   ├── app/
-│   │   ├── api/             # REST API Endpunkte
-│   │   ├── core/            # Security, Rate Limiting, Audit
-│   │   ├── models/          # Datenbank-Modelle
-│   │   ├── services/        # KI, Aufnahme, Benachrichtigung
-│   │   └── webrtc/          # WebRTC Signaling Server
-│   └── tests/               # Test Suite (30+ Tests)
-│
-├── frontend/                # React Dashboard
-│   └── src/
-│       ├── components/      # WebRTCViewer, ZoneEditor
-│       ├── pages/           # Dashboard, Kameras, KI-Einstellungen
-│       └── services/        # API Clients
-│
-├── android-app/             # Android Kamera-App
-│   └── app/src/main/
-│       ├── java/            # Kotlin Source Code
-│       └── res/             # Layouts, Icons
-│
-├── docker-compose.yml       # Docker Setup
-├── build-apk.sh            # APK Build Script
-└── .github/workflows/       # CI/CD (optional)
+SmartCamPro/
+├── backend/           # FastAPI Python Server
+├── frontend/          # React Dashboard
+├── android-app/       # Android Kotlin App
+├── Server-starten.bat # Windows Server-Skript
+├── server-starten.sh  # Linux/Mac Server-Skript
+├── INSTALLATION_DE.md # Deutsche Anleitung
+└── README.md          # Diese Datei
 ```
 
 ---
 
-## 🐳 Docker
+## ⚠️ Häufige Probleme
 
-```bash
-# Starten
-cp .env.example .env
-docker-compose up -d
+### "Server nicht erreichbar"
+- ✅ Server auf PC gestartet?
+- ✅ PC und Tablet im selben WLAN?
+- ✅ Richtige IP-Adresse eingegeben?
+- ✅ Firewall erlaubt Port 8000?
 
-# Services:
-# - Backend:  http://localhost:8000
-# - Frontend: http://localhost:3000
-# - Database: localhost:5432
+### "Falscher Benutzername oder Passwort"
+- Benutzername: `admin` (klein geschrieben!)
+- Passwort: `Admin123!` (großes A, Ausrufezeichen!)
 
-# Stoppen
-docker-compose down
-```
-
----
-
-## 📖 API Dokumentation
-
-Wenn der Server läuft:
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-### Schnellstart
-
-```bash
-# Registrieren
-curl -X POST http://localhost:8000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","email":"admin@test.com","password":"Admin123"}'
-
-# Login
-curl -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"Admin123"}'
-
-# Health Check
-curl http://localhost:8000/api/health
-```
+### "Unbekannte App installieren"
+- Einstellungen → Sicherheit → Unbekannte Apps
+- Browser/Dateimanager erlauben
 
 ---
 
-## 🛠️ Troubleshooting
+## 📋 Checkliste
 
-| Problem | Lösung |
-|---------|--------|
-| APK installiert nicht | "Unbekannte Quellen" aktivieren |
-| App verbindet nicht | Server-URL prüfen, HTTPS/HTTP |
-| Kamera startet nicht | Kamera-Berechtigung erteilen |
-| Kein Video | WebSocket-Verbindung prüfen |
-| Build fehlgeschlagen | JDK 17, Android SDK 34 installieren |
-
----
-
-## 📄 Lizenz
-
-MIT License – Frei nutzbar und modifizierbar.
+- [ ] Python auf PC installiert
+- [ ] Server gestartet (Terminal offen!)
+- [ ] PC-IP-Adresse gemerkt
+- [ ] APK auf Tablet installiert
+- [ ] Server-URL in App eingegeben
+- [ ] Login mit admin / Admin123!
+- [ ] Kamera funktioniert
 
 ---
 
-**SmartCam Pro v1.1.0** – Professionelles Sicherheitssystem für zu Hause.
+*SmartCam Pro v1.2 – Professionelles Sicherheitssystem*
