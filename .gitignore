@@ -36,3 +36,4 @@ backend/static/recordings/*
 backend/static/screenshots/*
 !backend/static/recordings/.gitkeep
 !backend/static/screenshots/.gitkeep
+.github/workflows/
