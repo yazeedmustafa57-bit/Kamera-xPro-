@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: smartcam
+      POSTGRES_PASSWORD: smartcam123
+      POSTGRES_DB: smartcampro
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartcam -d smartcampro"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://smartcam:smartcam123@db:5432/smartcampro
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: change-this-to-a-random-secret-key
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173","http://localhost"]'
+    volumes:
+      - recordings:/app/static/recordings
+      - screenshots:/app/static/screenshots
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  recordings:
+  screenshots:

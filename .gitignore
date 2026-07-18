@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+venv/
+.env
+
+# Node
+node_modules/
+dist/
+.next/
+
+# Android
+*.iml
+.gradle/
+local.properties
+.idea/
+build/
+*.apk
+*.aab
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Recording files
+backend/static/recordings/*
+backend/static/screenshots/*
+!backend/static/recordings/.gitkeep
+!backend/static/screenshots/.gitkeep

@@ -1,0 +1,25 @@
+FROM gradle:8.5-jdk17
+
+ENV ANDROID_HOME=/opt/android-sdk
+ENV PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${PATH}"
+
+# Install Android SDK
+RUN mkdir -p ${ANDROID_HOME}/cmdline-tools && \
+    cd /tmp && \
+    curl -sL "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -o cmdline-tools.zip && \
+    unzip -qo cmdline-tools.zip -d ${ANDROID_HOME}/cmdline-tools/ && \
+    mv ${ANDROID_HOME}/cmdline-tools/cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest
+
+# Accept licenses and install SDK
+RUN yes | sdkmanager --licenses > /dev/null 2>&1 && \
+    sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+
+WORKDIR /app
+COPY . .
+
+# Build
+RUN chmod +x gradlew && \
+    ./gradlew assembleRelease --no-daemon --no-parallel
+
+# Output
+RUN ls -la app/build/outputs/apk/release/ 2>/dev/null || echo "Check build output"
