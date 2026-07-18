@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
+import android.graphics.Matrix
+import android.graphics.Rect
 import android.graphics.YuvImage
 import android.media.Image
 import android.util.Base64
@@ -100,15 +102,36 @@ class CameraManager(private val context: Context) {
         }
     }
 
-    fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
+    private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
         return try {
-            val buffer = imageProxy.planes[0].buffer
-            val bytes = ByteArray(buffer.remaining())
-            buffer.get(bytes)
+            val nv21 = yuv420888ToNv21(imageProxy)
+            val yuvImage = YuvImage(nv21, ImageFormat.NV21, imageProxy.width, imageProxy.height, null)
+            val out = ByteArrayOutputStream()
+            yuvImage.compressToJpeg(Rect(0, 0, imageProxy.width, imageProxy.height), 80, out)
+            val bytes = out.toByteArray()
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
         } catch (e: Exception) {
+            Log.e("CameraManager", "YUV conversion failed", e)
             null
         }
+    }
+
+    private fun yuv420888ToNv21(imageProxy: ImageProxy): ByteArray {
+        val yBuffer = imageProxy.planes[0].buffer
+        val uBuffer = imageProxy.planes[1].buffer
+        val vBuffer = imageProxy.planes[2].buffer
+
+        val ySize = yBuffer.remaining()
+        val uSize = uBuffer.remaining()
+        val vSize = vBuffer.remaining()
+
+        val nv21 = ByteArray(ySize + uSize + vSize)
+
+        yBuffer.get(nv21, 0, ySize)
+        vBuffer.get(nv21, ySize, vSize)
+        uBuffer.get(nv21, ySize + vSize, uSize)
+
+        return nv21
     }
 
     fun takeScreenshot(callback: (Bitmap?) -> Unit) {
@@ -136,7 +159,7 @@ class CameraManager(private val context: Context) {
 
     fun bitmapToBase64(bitmap: Bitmap): String {
         val stream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, stream)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 60, stream)
         return Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
     }
 

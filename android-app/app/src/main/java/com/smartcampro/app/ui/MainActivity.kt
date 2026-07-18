@@ -149,6 +149,7 @@ class MainActivity : AppCompatActivity() {
         apiClient.login(username, password, object : ApiClient.ApiCallback {
             override fun onSuccess(response: org.json.JSONObject) {
                 val token = response.getString("access_token")
+
                 prefs.edit().apply {
                     putString(Constants.PREF_SERVER_URL, serverUrl)
                     putString(Constants.PREF_CAMERA_NAME, cameraName)
@@ -156,8 +157,11 @@ class MainActivity : AppCompatActivity() {
                     putString("username", username)
                     apply()
                 }
-                showSuccess("Verbunden! Kamera wird gestartet...")
-                startCameraActivity(token, cameraName)
+
+                showSuccess("Angemeldet! Kamera wird registriert...")
+
+                // Step 2: Register camera with backend to get UUID
+                registerCamera(token, cameraName, serverUrl)
             }
 
             override fun onError(error: String) {
@@ -182,11 +186,70 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun startCameraActivity(token: String, cameraName: String) {
+    private fun registerCamera(token: String, cameraName: String, serverUrl: String) {
+        // First try to find existing camera with same name
+        apiClient.listCameras(token, object : ApiClient.ApiCallback {
+            override fun onSuccess(response: org.json.JSONObject) {
+                // Response is a JSON array of cameras
+                try {
+                    val camerasArray = response.toString()
+                    // Try to find camera with matching name in the list
+                    // Since response might be an array, parse it
+                    val array = org.json.JSONArray(camerasArray)
+                    var foundCameraId: String? = null
+                    for (i in 0 until array.length()) {
+                        val cam = array.getJSONObject(i)
+                        if (cam.optString("name") == cameraName) {
+                            foundCameraId = cam.getString("id")
+                            break
+                        }
+                    }
+                    if (foundCameraId != null) {
+                        // Camera exists, use its UUID
+                        prefs.edit().putString(Constants.PREF_CAMERA_ID, foundCameraId).apply()
+                        showSuccess("Kamera verbunden! Starte Streaming...")
+                        startCameraActivity(token, cameraName, foundCameraId, serverUrl)
+                    } else {
+                        // Camera not found, create new one
+                        createNewCamera(token, cameraName, serverUrl)
+                    }
+                } catch (e: Exception) {
+                    // Response is a single object, create new camera
+                    createNewCamera(token, cameraName, serverUrl)
+                }
+            }
+
+            override fun onError(error: String) {
+                // List failed, try creating camera
+                createNewCamera(token, cameraName, serverUrl)
+            }
+        })
+    }
+
+    private fun createNewCamera(token: String, cameraName: String, serverUrl: String) {
+        apiClient.registerCamera(token, cameraName, object : ApiClient.ApiCallback {
+            override fun onSuccess(response: org.json.JSONObject) {
+                val cameraId = response.getString("id")
+                prefs.edit().putString(Constants.PREF_CAMERA_ID, cameraId).apply()
+                showSuccess("Kamera registriert! Starte Streaming...")
+                startCameraActivity(token, cameraName, cameraId, serverUrl)
+            }
+
+            override fun onError(error: String) {
+                showError("Kamera-Registrierung fehlgeschlagen: $error")
+                Toast.makeText(this@MainActivity, "Kamera konnte nicht registriert werden: $error", Toast.LENGTH_LONG).show()
+                connectButton.isEnabled = true
+                connectButton.text = "Anmelden"
+            }
+        })
+    }
+
+    private fun startCameraActivity(token: String, cameraName: String, cameraId: String, serverUrl: String) {
         val intent = Intent(this, CameraActivity::class.java).apply {
             putExtra("token", token)
             putExtra("camera_name", cameraName)
-            putExtra("server_url", prefs.getString(Constants.PREF_SERVER_URL, ""))
+            putExtra("camera_id", cameraId)
+            putExtra("server_url", serverUrl)
         }
         startActivity(intent)
         finish()

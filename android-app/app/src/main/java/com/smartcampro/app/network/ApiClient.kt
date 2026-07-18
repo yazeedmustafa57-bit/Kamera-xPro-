@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit
 class ApiClient(private val baseUrl: String) {
 
     private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
     interface ApiCallback {
@@ -28,6 +28,17 @@ class ApiClient(private val baseUrl: String) {
             put("password", password)
         }
         post("/api/auth/login", json, callback)
+    }
+
+    fun registerCamera(token: String, cameraName: String, callback: ApiCallback) {
+        val json = JSONObject().apply {
+            put("name", cameraName)
+        }
+        post("/api/cameras/", json, token, callback)
+    }
+
+    fun listCameras(token: String, callback: ApiCallback) {
+        get("/api/cameras/", token, callback)
     }
 
     fun updateCameraStatus(
@@ -60,19 +71,11 @@ class ApiClient(private val baseUrl: String) {
         post("/api/events/create?camera_id=$cameraId&event_type=$type&confidence=$confidence", json, token, callback)
     }
 
-    private fun post(path: String, json: JSONObject, callback: ApiCallback) {
-        post(path, json, null, callback)
-    }
-
-    private fun post(path: String, json: JSONObject, token: String?, callback: ApiCallback) {
-        val body = json.toString().toRequestBody("application/json".toMediaType())
+    private fun get(path: String, token: String?, callback: ApiCallback) {
         val requestBuilder = Request.Builder()
             .url("$baseUrl$path")
-            .post(body)
-            .header("Content-Type", "application/json")
-
+            .get()
         token?.let { requestBuilder.header("Authorization", "Bearer $it") }
-
         client.newCall(requestBuilder.build()).enqueue(object : okhttp3.Callback {
             override fun onResponse(call: Call, response: Response) {
                 try {
@@ -86,7 +89,43 @@ class ApiClient(private val baseUrl: String) {
                     callback.onError(e.message ?: "Unknown error")
                 }
             }
+            override fun onFailure(call: Call, e: IOException) {
+                callback.onError(e.message ?: "Connection failed")
+            }
+        })
+    }
 
+    private fun post(path: String, json: JSONObject, callback: ApiCallback) {
+        post(path, json, null, callback)
+    }
+
+    private fun post(path: String, json: JSONObject, token: String?, callback: ApiCallback) {
+        val body = json.toString().toRequestBody("application/json".toMediaType())
+        val requestBuilder = Request.Builder()
+            .url("$baseUrl$path")
+            .post(body)
+            .header("Content-Type", "application/json")
+        token?.let { requestBuilder.header("Authorization", "Bearer $it") }
+
+        client.newCall(requestBuilder.build()).enqueue(object : okhttp3.Callback {
+            override fun onResponse(call: Call, response: Response) {
+                try {
+                    val responseBody = response.body?.string()
+                    if (response.isSuccessful && responseBody != null) {
+                        callback.onSuccess(JSONObject(responseBody))
+                    } else {
+                        val errorMsg = try {
+                            val errBody = JSONObject(responseBody ?: "{}")
+                            errBody.optString("detail", "HTTP ${response.code}")
+                        } catch (e: Exception) {
+                            "HTTP ${response.code}: ${response.message}"
+                        }
+                        callback.onError(errorMsg)
+                    }
+                } catch (e: Exception) {
+                    callback.onError(e.message ?: "Unknown error")
+                }
+            }
             override fun onFailure(call: Call, e: IOException) {
                 callback.onError(e.message ?: "Connection failed")
             }
@@ -99,7 +138,6 @@ class ApiClient(private val baseUrl: String) {
             .url("$baseUrl$path")
             .put(body)
             .header("Content-Type", "application/json")
-
         token?.let { requestBuilder.header("Authorization", "Bearer $it") }
 
         client.newCall(requestBuilder.build()).enqueue(object : okhttp3.Callback {
@@ -115,7 +153,6 @@ class ApiClient(private val baseUrl: String) {
                     callback.onError(e.message ?: "Unknown error")
                 }
             }
-
             override fun onFailure(call: Call, e: IOException) {
                 callback.onError(e.message ?: "Connection failed")
             }
