@@ -15,18 +15,50 @@ async def lifespan(app: FastAPI):
     os.makedirs("static/screenshots", exist_ok=True)
     yield
 
-app = FastAPI(title="SmartCam Pro API", description="Professional Security Camera System", version="1.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="SmartCam Pro API",
+    description="Professionelles Sicherheitskamera-System mit Cloud-Unterstuetzung",
+    version="2.0.0",
+    lifespan=lifespan
+)
 
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(cameras.router, prefix="/api/cameras", tags=["Cameras"])
-app.include_router(events.router, prefix="/api/events", tags=["Events"])
-app.include_router(recordings.router, prefix="/api/recordings", tags=["Recordings"])
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(cameras.router, prefix="/api/cameras", tags=["Kameras"])
+app.include_router(events.router, prefix="/api/events", tags=["Ereignisse"])
+app.include_router(recordings.router, prefix="/api/recordings", tags=["Aufnahmen"])
 app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "service": "SmartCam Pro", "version": "1.1.0"}
+    return {
+        "status": "healthy",
+        "service": "SmartCam Pro",
+        "version": "2.0.0",
+        "features": [
+            "Cloud-Streaming",
+            "Benutzerverwaltung",
+            "Subscription-System",
+            "KI-Bewegungserkennung",
+            "Push-Benachrichtigungen"
+        ]
+    }
+
+@app.get("/")
+async def root():
+    return {
+        "name": "SmartCam Pro API",
+        "version": "2.0.0",
+        "docs": "/docs",
+        "health": "/api/health"
+    }

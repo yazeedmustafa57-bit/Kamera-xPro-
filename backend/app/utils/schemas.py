@@ -7,11 +7,13 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     role: str = "user"
+    
     @field_validator("username")
     @classmethod
     def validate_username(cls, v):
         if len(v) < 3: raise ValueError("Username must be at least 3 characters")
         return v
+    
     @field_validator("password")
     @classmethod
     def validate_password(cls, v):
@@ -28,7 +30,12 @@ class UserResponse(BaseModel):
     email: str
     role: str
     is_active: bool
+    subscription: str
+    subscription_expires: Optional[datetime] = None
+    max_cameras: int
+    max_storage_mb: int
     created_at: datetime
+    
     class Config:
         from_attributes = True
 
@@ -61,6 +68,7 @@ class CameraResponse(BaseModel):
     stream_url: str
     created_at: datetime
     updated_at: Optional[datetime] = None
+    
     class Config:
         from_attributes = True
 
@@ -75,6 +83,7 @@ class EventResponse(BaseModel):
     is_read: bool
     created_at: datetime
     camera_name: Optional[str] = None
+    
     class Config:
         from_attributes = True
 
@@ -87,6 +96,7 @@ class RecordingResponse(BaseModel):
     file_size: int
     created_at: datetime
     camera_name: Optional[str] = None
+    
     class Config:
         from_attributes = True
 
@@ -97,3 +107,20 @@ class DashboardStats(BaseModel):
     events_today: int
     total_recordings: int
     storage_used: str
+    subscription: str
+    max_cameras: int
+    max_storage_mb: int
+
+# Subscription
+class SubscriptionPlan(BaseModel):
+    name: str
+    price_monthly: float
+    price_yearly: float
+    max_cameras: int
+    max_storage_mb: int
+    max_events: int
+    features: list[str]
+
+class SubscriptionUpgrade(BaseModel):
+    plan: str  # "free", "pro", "business"
+    payment_method: Optional[str] = None

@@ -1,165 +1,128 @@
 package com.smartcampro.app.network
 
-import okhttp3.Call
+import android.util.Log
+import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.Response
-import org.json.JSONObject
 import java.io.IOException
-import java.util.concurrent.TimeUnit
 
-class ApiClient(private val baseUrl: String) {
-
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .build()
+class ApiClient(private var baseUrl: String) {
 
     interface ApiCallback {
         fun onSuccess(response: String)
         fun onError(error: String)
     }
 
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
+
+    private val JSON = "application/json; charset=utf-8".toMediaType()
+
     fun login(username: String, password: String, callback: ApiCallback) {
-        val json = JSONObject().apply {
-            put("username", username)
-            put("password", password)
-        }
-        postJson("/api/auth/login", json, callback)
+        val json = """{"username":"$username","password":"$password"}"""
+        post("$baseUrl/api/auth/login", json, callback)
     }
 
-    fun registerCamera(token: String, cameraName: String, callback: ApiCallback) {
-        val json = JSONObject().apply {
-            put("name", cameraName)
-        }
-        postJson("/api/cameras/", json, token, callback)
+    fun register(username: String, email: String, password: String, callback: ApiCallback) {
+        val json = """{"username":"$username","email":"$email","password":"$password"}"""
+        post("$baseUrl/api/auth/register", json, callback)
+    }
+
+    fun getMe(token: String, callback: ApiCallback) {
+        get("$baseUrl/api/auth/me", token, callback)
     }
 
     fun listCameras(token: String, callback: ApiCallback) {
-        get("/api/cameras/", token, callback)
+        get("$baseUrl/api/cameras/", token, callback)
     }
 
-    fun updateCameraStatus(
-        token: String,
-        cameraId: String,
-        status: String,
-        battery: Int,
-        wifiSignal: Int,
-        callback: ApiCallback
-    ) {
-        val json = JSONObject().apply {
-            put("status", status)
-            put("battery", battery)
-            put("wifi_signal", wifiSignal)
-        }
-        putJson("/api/cameras/$cameraId", json, token, callback)
+    fun registerCamera(token: String, cameraName: String, callback: ApiCallback) {
+        val json = """{"name":"$cameraName","location":"Android Device"}"""
+        postWithAuth("$baseUrl/api/cameras/", token, json, callback)
     }
 
-    fun sendMotionEvent(
-        token: String,
-        cameraId: String,
-        type: String,
-        confidence: Float,
-        callback: ApiCallback
-    ) {
-        val json = JSONObject().apply {
-            put("type", type)
-            put("confidence", confidence.toString())
-        }
-        postJson("/api/events/create?camera_id=$cameraId&event_type=$type&confidence=$confidence", json, token, callback)
+    fun updateCameraStatus(token: String, cameraId: String, status: String, battery: Int, wifi: Int, callback: ApiCallback) {
+        val json = """{"status":"$status","battery":$battery,"wifi_signal":$wifi}"""
+        putWithAuth("$baseUrl/api/cameras/$cameraId", token, json, callback)
     }
 
-    private fun get(path: String, token: String?, callback: ApiCallback) {
-        val requestBuilder = Request.Builder()
-            .url("$baseUrl$path")
-            .get()
-        token?.let { requestBuilder.header("Authorization", "Bearer $it") }
+    fun sendMotionEvent(token: String, cameraId: String, type: String, confidence: Float, callback: ApiCallback) {
+        val json = """{"type":"$type","confidence":"$confidence","description":"Motion detected"}"""
+        postWithAuth("$baseUrl/api/events/", token, json, callback)
+    }
 
-        client.newCall(requestBuilder.build()).enqueue(object : okhttp3.Callback {
-            override fun onResponse(call: Call, response: Response) {
-                try {
-                    val responseBody = response.body?.string()
-                    if (response.isSuccessful && responseBody != null) {
-                        callback.onSuccess(responseBody)
-                    } else {
-                        val errorMsg = try {
-                            val errBody = JSONObject(responseBody ?: "{}")
-                            errBody.optString("detail", "HTTP ${response.code}")
-                        } catch (e: Exception) {
-                            "HTTP ${response.code}: ${response.message}"
-                        }
-                        callback.onError(errorMsg)
-                    }
-                } catch (e: Exception) {
-                    callback.onError(e.message ?: "Unknown error")
-                }
-            }
+    fun getSubscriptionPlans(callback: ApiCallback) {
+        get("$baseUrl/api/auth/subscription/plans", "", callback)
+    }
+
+    fun upgradeSubscription(token: String, plan: String, callback: ApiCallback) {
+        val json = """{"plan":"$plan"}"""
+        postWithAuth("$baseUrl/api/auth/subscription/upgrade", token, json, callback)
+    }
+
+    // HTTP methods
+    private fun post(url: String, json: String, callback: ApiCallback) {
+        val body = json.toRequestBody(JSON)
+        val request = Request.Builder().url(url).post(body).build()
+        client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                callback.onError(e.message ?: "Connection failed")
+                callback.onError(e.message ?: "Verbindungsfehler")
+            }
+            override fun onResponse(call: Call, response: Response) {
+                val resp = response.body?.string() ?: ""
+                if (response.isSuccessful) callback.onSuccess(resp)
+                else callback.onError("HTTP ${response.code}: $resp")
             }
         })
     }
 
-    private fun postJson(path: String, json: JSONObject, callback: ApiCallback) {
-        postJson(path, json, null, callback)
-    }
-
-    private fun postJson(path: String, json: JSONObject, token: String?, callback: ApiCallback) {
-        val body = json.toString().toRequestBody("application/json".toMediaType())
-        val requestBuilder = Request.Builder()
-            .url("$baseUrl$path")
-            .post(body)
-        token?.let { requestBuilder.header("Authorization", "Bearer $it") }
-
-        client.newCall(requestBuilder.build()).enqueue(object : okhttp3.Callback {
-            override fun onResponse(call: Call, response: Response) {
-                try {
-                    val responseBody = response.body?.string()
-                    if (response.isSuccessful && responseBody != null) {
-                        callback.onSuccess(responseBody)
-                    } else {
-                        val errorMsg = try {
-                            val errBody = JSONObject(responseBody ?: "{}")
-                            errBody.optString("detail", "HTTP ${response.code}")
-                        } catch (e: Exception) {
-                            "HTTP ${response.code}: ${response.message}"
-                        }
-                        callback.onError(errorMsg)
-                    }
-                } catch (e: Exception) {
-                    callback.onError(e.message ?: "Unknown error")
-                }
-            }
+    private fun get(url: String, token: String, callback: ApiCallback) {
+        val builder = Request.Builder().url(url).get()
+        if (token.isNotEmpty()) builder.addHeader("Authorization", "Bearer $token")
+        client.newCall(builder.build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                callback.onError(e.message ?: "Connection failed")
+                callback.onError(e.message ?: "Verbindungsfehler")
+            }
+            override fun onResponse(call: Call, response: Response) {
+                val resp = response.body?.string() ?: ""
+                if (response.isSuccessful) callback.onSuccess(resp)
+                else callback.onError("HTTP ${response.code}: $resp")
             }
         })
     }
 
-    private fun putJson(path: String, json: JSONObject, token: String?, callback: ApiCallback) {
-        val body = json.toString().toRequestBody("application/json".toMediaType())
-        val requestBuilder = Request.Builder()
-            .url("$baseUrl$path")
-            .put(body)
-        token?.let { requestBuilder.header("Authorization", "Bearer $it") }
-
-        client.newCall(requestBuilder.build()).enqueue(object : okhttp3.Callback {
-            override fun onResponse(call: Call, response: Response) {
-                try {
-                    val responseBody = response.body?.string()
-                    if (response.isSuccessful && responseBody != null) {
-                        callback.onSuccess(responseBody)
-                    } else {
-                        callback.onError("HTTP ${response.code}")
-                    }
-                } catch (e: Exception) {
-                    callback.onError(e.message ?: "Unknown error")
-                }
-            }
+    private fun postWithAuth(url: String, token: String, json: String, callback: ApiCallback) {
+        val body = json.toRequestBody(JSON)
+        val request = Request.Builder().url(url).post(body)
+            .addHeader("Authorization", "Bearer $token")
+            .build()
+        client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                callback.onError(e.message ?: "Connection failed")
+                callback.onError(e.message ?: "Verbindungsfehler")
+            }
+            override fun onResponse(call: Call, response: Response) {
+                val resp = response.body?.string() ?: ""
+                if (response.isSuccessful) callback.onSuccess(resp)
+                else callback.onError("HTTP ${response.code}: $resp")
+            }
+        })
+    }
+
+    private fun putWithAuth(url: String, token: String, json: String, callback: ApiCallback) {
+        val body = json.toRequestBody(JSON)
+        val request = Request.Builder().url(url).put(body)
+            .addHeader("Authorization", "Bearer $token")
+            .build()
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                callback.onError(e.message ?: "Verbindungsfehler")
+            }
+            override fun onResponse(call: Call, response: Response) {
+                val resp = response.body?.string() ?: ""
+                if (response.isSuccessful) callback.onSuccess(resp)
+                else callback.onError("HTTP ${response.code}: $resp")
             }
         })
     }
