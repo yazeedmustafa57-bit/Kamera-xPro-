@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import com.smartcampro.app.R
 import com.smartcampro.app.network.ApiClient
 import com.smartcampro.app.utils.Constants
+import com.smartcampro.app.utils.UserManager
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -20,6 +21,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var prefs: SharedPreferences
     private lateinit var apiClient: ApiClient
+    private lateinit var userManager: UserManager
 
     private lateinit var serverUrlInput: EditText
     private lateinit var cameraNameInput: EditText
@@ -28,6 +30,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var connectButton: Button
     private lateinit var standaloneButton: Button
     private lateinit var statusText: TextView
+    private lateinit var userInfoText: TextView
+    private lateinit var logoutButton: Button
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 100
@@ -38,47 +42,50 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
+        apiClient = ApiClient(Constants.DEFAULT_SERVER_URL)
+        userManager = UserManager(this)
 
         serverUrlInput = findViewById(R.id.serverUrlInput)
         cameraNameInput = findViewById(R.id.cameraNameInput)
         usernameInput = findViewById(R.id.usernameInput)
         passwordInput = findViewById(R.id.passwordInput)
         connectButton = findViewById(R.id.connectButton)
+        standaloneButton = findViewById(R.id.standaloneButton)
         statusText = findViewById(R.id.statusText)
+        userInfoText = findViewById(R.id.userInfoText)
+        logoutButton = findViewById(R.id.logoutButton)
 
-        // Standalone-Button hinzufuegen (falls er nicht im Layout ist)
-        try {
-            standaloneButton = findViewById(R.id.standaloneButton)
-        } catch (e: Exception) {
-            // Button nicht im Layout - erstelle ihn dynamisch
-            standaloneButton = Button(this).apply {
-                text = "📷 Kamera starten (ohne Server)"
-                setTextColor(Color.WHITE)
-                setBackgroundColor(Color.parseColor("#22c55e"))
-                textSize = 14f
-                val params = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    140
-                )
-                params.topMargin = 16
-                layoutParams = params
-            }
-            // Finde den LinearLayout und fuege Button hinzu
-            val parent = connectButton.parent as? LinearLayout
-            parent?.addView(standaloneButton, parent.indexOfChild(connectButton) + 1)
-        }
+        // User info
+        val currentUser = userManager.getLoggedInUser() ?: "Gast"
+        val role = userManager.getUserRole(currentUser)
+        userInfoText.text = "$currentUser ($role)"
 
+        // Saved values
         val savedUrl = prefs.getString(Constants.PREF_SERVER_URL, "")
-        if (!savedUrl.isNullOrEmpty()) {
-            serverUrlInput.setText(savedUrl)
-        } else {
-            serverUrlInput.hint = "z.B. http://192.168.1.100:8000"
-        }
+        if (!savedUrl.isNullOrEmpty()) serverUrlInput.setText(savedUrl)
+        else serverUrlInput.hint = "z.B. http://192.168.1.100:8000"
         cameraNameInput.setText(prefs.getString(Constants.PREF_CAMERA_NAME, "Kamera 1"))
         usernameInput.setText(prefs.getString("username", ""))
 
+        // Buttons
         connectButton.setOnClickListener { connect() }
         standaloneButton.setOnClickListener { startStandalone() }
+        logoutButton.setOnClickListener {
+            userManager.logout()
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+        }
+
+        // Navigation
+        findViewById<Button>(R.id.navGallery).setOnClickListener {
+            startActivity(Intent(this, GalleryActivity::class.java))
+        }
+        findViewById<Button>(R.id.navEvents).setOnClickListener {
+            startActivity(Intent(this, EventsActivity::class.java))
+        }
+        findViewById<Button>(R.id.navSettings).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
 
         showStatus("Kamera starten oder mit Server verbinden", false)
         requestPermissions()
@@ -101,7 +108,8 @@ class MainActivity : AppCompatActivity() {
     private fun requestPermissions() {
         val permissions = arrayOf(
             Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.VIBRATE
         )
         val needed = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
@@ -114,84 +122,47 @@ class MainActivity : AppCompatActivity() {
     private fun showStatus(message: String, isError: Boolean = false) {
         runOnUiThread {
             statusText.text = message
-            statusText.setTextColor(
-                if (isError) Color.parseColor("#ef4444")
-                else Color.parseColor("#94a3b8")
-            )
-        }
-    }
-
-    private fun showConnecting() {
-        runOnUiThread {
-            statusText.text = "Verbinde mit Server..."
-            statusText.setTextColor(Color.parseColor("#f59e0b"))
-            connectButton.isEnabled = false
-            connectButton.text = "Verbinde..."
-        }
-    }
-
-    private fun showSuccess(message: String) {
-        runOnUiThread {
-            statusText.text = message
-            statusText.setTextColor(Color.parseColor("#22c55e"))
-        }
-    }
-
-    private fun showError(error: String) {
-        runOnUiThread {
-            statusText.text = "Fehler: $error"
-            statusText.setTextColor(Color.parseColor("#ef4444"))
-            connectButton.isEnabled = true
-            connectButton.text = "Anmelden"
+            statusText.setTextColor(if (isError) Color.parseColor("#ef4444") else Color.parseColor("#94a3b8"))
         }
     }
 
     private fun startStandalone() {
         val cameraName = cameraNameInput.text.toString().trim().ifEmpty { "Kamera 1" }
-        showSuccess("Kamera-Modus gestartet!")
-        
+        prefs.edit().putString(Constants.PREF_CAMERA_NAME, cameraName).apply()
         val intent = Intent(this, CameraActivity::class.java).apply {
             putExtra("token", "standalone")
             putExtra("camera_name", cameraName)
-            putExtra("camera_id", "standalone")
+            putExtra("camera_id", "")
             putExtra("server_url", "")
         }
         startActivity(intent)
-        finish()
     }
 
     private fun connect() {
         val serverUrl = serverUrlInput.text.toString().trim()
-        val cameraName = cameraNameInput.text.toString().trim()
+        val cameraName = cameraNameInput.text.toString().trim().ifEmpty { "Kamera 1" }
         val username = usernameInput.text.toString().trim()
-        val password = passwordInput.text.toString().trim()
+        val password = passwordInput.text.toString()
 
         if (serverUrl.isEmpty()) {
-            Toast.makeText(this, "Bitte Server-URL eingeben", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (!serverUrl.startsWith("http://") && !serverUrl.startsWith("https://")) {
-            Toast.makeText(this, "URL muss mit http:// oder https:// beginnen", Toast.LENGTH_SHORT).show()
+            showStatus("Server-URL eingeben!", true)
             return
         }
         if (username.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Bitte Benutzername und Passwort eingeben", Toast.LENGTH_SHORT).show()
+            showStatus("Benutzername und Passwort eingeben!", true)
             return
         }
-        if (password.length < 6) {
-            Toast.makeText(this, "Passwort muss mindestens 6 Zeichen lang sein", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        showConnecting()
 
         apiClient = ApiClient(serverUrl)
+        showStatus("Verbinde mit Server...", false)
+        connectButton.isEnabled = false
+        connectButton.text = "Verbinde..."
+
         apiClient.login(username, password, object : ApiClient.ApiCallback {
             override fun onSuccess(response: String) {
                 try {
                     val json = JSONObject(response)
                     val token = json.getString("access_token")
-
                     prefs.edit().apply {
                         putString(Constants.PREF_SERVER_URL, serverUrl)
                         putString(Constants.PREF_CAMERA_NAME, cameraName)
@@ -199,37 +170,38 @@ class MainActivity : AppCompatActivity() {
                         putString("username", username)
                         apply()
                     }
-
-                    showSuccess("Angemeldet! Kamera wird registriert...")
+                    showStatus("Angemeldet! Registriere Kamera...", false)
                     registerCamera(token, cameraName)
-
                 } catch (e: Exception) {
                     showError("Login fehlgeschlagen: ${e.message}")
-                    runOnUiThread {
-                        connectButton.isEnabled = true
-                        connectButton.text = "Anmelden"
-                    }
+                    resetButton()
                 }
             }
 
             override fun onError(error: String) {
                 val friendlyError = when {
-                    error.contains("Unable to resolve host") ->
-                        "Server nicht erreichbar. Pruefe die IP-Adresse."
-                    error.contains("Connection refused") ->
-                        "Server antwortet nicht. Ist der Server gestartet?"
-                    error.contains("timeout", ignoreCase = true) ->
-                        "Verbindung zu lange. Pruefe IP und Netzwerk."
-                    error.contains("401") ->
-                        "Falscher Benutzername oder Passwort."
-                    error.contains("403") ->
-                        "Zugang verweigert. Account deaktiviert?"
-                    else -> "Verbindung fehlgeschlagen: $error"
+                    error.contains("Unable to resolve host") -> "Server nicht erreichbar"
+                    error.contains("Connection refused") -> "Server antwortet nicht"
+                    error.contains("timeout", ignoreCase = true) -> "Verbindung zu lange"
+                    error.contains("401") -> "Falscher Benutzer oder Passwort"
+                    else -> "Fehler: $error"
                 }
                 showError(friendlyError)
-                Toast.makeText(this@MainActivity, friendlyError, Toast.LENGTH_LONG).show()
+                resetButton()
             }
         })
+    }
+
+    private fun showError(message: String) {
+        showStatus(message, true)
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+
+    private fun resetButton() {
+        runOnUiThread {
+            connectButton.isEnabled = true
+            connectButton.text = "Mit Server anmelden"
+        }
     }
 
     private fun registerCamera(token: String, cameraName: String) {
@@ -247,7 +219,6 @@ class MainActivity : AppCompatActivity() {
                     }
                     if (foundCameraId != null) {
                         prefs.edit().putString(Constants.PREF_CAMERA_ID, foundCameraId).apply()
-                        showSuccess("Kamera verbunden! Starte Streaming...")
                         val serverUrl = prefs.getString(Constants.PREF_SERVER_URL, "") ?: ""
                         startCameraActivity(token, cameraName, foundCameraId, serverUrl)
                     } else {
@@ -271,24 +242,17 @@ class MainActivity : AppCompatActivity() {
                     val json = JSONObject(response)
                     val cameraId = json.getString("id")
                     prefs.edit().putString(Constants.PREF_CAMERA_ID, cameraId).apply()
-                    showSuccess("Kamera registriert! Starte Streaming...")
                     val serverUrl = prefs.getString(Constants.PREF_SERVER_URL, "") ?: ""
                     startCameraActivity(token, cameraName, cameraId, serverUrl)
                 } catch (e: Exception) {
                     showError("Kamera-Registrierung fehlgeschlagen: ${e.message}")
-                    runOnUiThread {
-                        connectButton.isEnabled = true
-                        connectButton.text = "Anmelden"
-                    }
+                    resetButton()
                 }
             }
 
             override fun onError(error: String) {
                 showError("Kamera-Registrierung fehlgeschlagen: $error")
-                runOnUiThread {
-                    connectButton.isEnabled = true
-                    connectButton.text = "Anmelden"
-                }
+                resetButton()
             }
         })
     }

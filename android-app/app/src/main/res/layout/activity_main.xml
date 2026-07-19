@@ -3,117 +3,239 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#1a1a2e"
-    android:padding="24dp"
-    android:gravity="center">
+    android:background="#0f172a">
 
-    <ImageView
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:src="@drawable/ic_launcher"
-        android:layout_marginBottom="16dp" />
-
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="SmartCam Pro"
-        android:textColor="#ffffff"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="#1e293b"
+        android:gravity="center_vertical">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Professionelles Sicherheitssystem"
-        android:textColor="#94a3b8"
-        android:textSize="14sp"
-        android:layout_marginBottom="32dp" />
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_launcher"
+            android:layout_marginEnd="12dp" />
 
-    <!-- Standalone Button - GROSS und sichtbar -->
-    <Button
-        android:id="@+id/standaloneButton"
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SmartCam Pro"
+                android:textColor="#ffffff"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/userInfoText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Admin"
+                android:textColor="#94a3b8"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/logoutButton"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="Logout"
+            android:textColor="#ffffff"
+            android:backgroundTint="#475569"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:text="📷 Kamera starten (ohne Server)"
-        android:textColor="#ffffff"
-        android:backgroundTint="#22c55e"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="24dp" />
+        android:layout_height="match_parent">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="─── Oder mit Server verbinden ───"
-        android:textColor="#64748b"
-        android:textSize="12sp"
-        android:layout_marginBottom="16dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
 
-    <EditText
-        android:id="@+id/serverUrlInput"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:hint="Server-URL (z.B. http://192.168.1.100:8000)"
-        android:inputType="textUri"
-        android:textColor="#ffffff"
-        android:textColorHint="#64748b"
-        android:background="@drawable/edit_text_bg"
-        android:paddingHorizontal="16dp"
-        android:layout_marginBottom="12dp" />
+            <!-- Kamera Starten -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📷 Kamera"
+                android:textColor="#ffffff"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
 
-    <EditText
-        android:id="@+id/cameraNameInput"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:hint="Kamera-Name"
-        android:inputType="text"
-        android:textColor="#ffffff"
-        android:textColorHint="#64748b"
-        android:background="@drawable/edit_text_bg"
-        android:paddingHorizontal="16dp"
-        android:layout_marginBottom="12dp" />
+            <Button
+                android:id="@+id/standaloneButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="📷 Kamera starten (ohne Server)"
+                android:textColor="#ffffff"
+                android:backgroundTint="#22c55e"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
 
-    <EditText
-        android:id="@+id/usernameInput"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:hint="Benutzername"
-        android:inputType="text"
-        android:textColor="#ffffff"
-        android:textColorHint="#64748b"
-        android:background="@drawable/edit_text_bg"
-        android:paddingHorizontal="16dp"
-        android:layout_marginBottom="12dp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="12dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="────────── Oder mit Server ──────────"
+                    android:textColor="#64748b"
+                    android:textSize="11sp" />
+            </LinearLayout>
 
-    <EditText
-        android:id="@+id/passwordInput"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:hint="Passwort"
-        android:inputType="textPassword"
-        android:textColor="#ffffff"
-        android:textColorHint="#64748b"
-        android:background="@drawable/edit_text_bg"
-        android:paddingHorizontal="16dp"
-        android:layout_marginBottom="24dp" />
+            <EditText
+                android:id="@+id/serverUrlInput"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:hint="Server-URL (z.B. http://192.168.1.100:8000)"
+                android:inputType="textUri"
+                android:textColor="#ffffff"
+                android:textColorHint="#64748b"
+                android:background="#1e293b"
+                android:paddingHorizontal="14dp"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp" />
 
-    <Button
-        android:id="@+id/connectButton"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:text="Mit Server anmelden"
-        android:textColor="#ffffff"
-        android:backgroundTint="#3b82f6"
-        android:textSize="16sp"
-        android:layout_marginBottom="16dp" />
+            <EditText
+                android:id="@+id/cameraNameInput"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:hint="Kamera-Name"
+                android:textColor="#ffffff"
+                android:textColorHint="#64748b"
+                android:background="#1e293b"
+                android:paddingHorizontal="14dp"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp" />
 
-    <TextView
-        android:id="@+id/statusText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:textColor="#94a3b8"
-        android:textSize="14sp"
-        android:gravity="center" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <EditText
+                    android:id="@+id/usernameInput"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:hint="User"
+                    android:textColor="#ffffff"
+                    android:textColorHint="#64748b"
+                    android:background="#1e293b"
+                    android:paddingHorizontal="12dp"
+                    android:textSize="13sp"
+                    android:layout_marginEnd="6dp" />
+
+                <EditText
+                    android:id="@+id/passwordInput"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:hint="Passwort"
+                    android:inputType="textPassword"
+                    android:textColor="#ffffff"
+                    android:textColorHint="#64748b"
+                    android:background="#1e293b"
+                    android:paddingHorizontal="12dp"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/connectButton"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="Mit Server anmelden"
+                android:textColor="#ffffff"
+                android:backgroundTint="#3b82f6"
+                android:textSize="14sp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/statusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#94a3b8"
+                android:textSize="13sp"
+                android:gravity="center"
+                android:layout_marginBottom="20dp" />
+
+            <!-- Navigation -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📋 Navigation"
+                android:textColor="#ffffff"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Row 1 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/navGallery"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:text="🎬\nGalerie"
+                    android:textColor="#ffffff"
+                    android:backgroundTint="#8b5cf6"
+                    android:textSize="12sp"
+                    android:layout_marginEnd="4dp" />
+
+                <Button
+                    android:id="@+id/navEvents"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:text="📋\nEreignisse"
+                    android:textColor="#ffffff"
+                    android:backgroundTint="#f59e0b"
+                    android:textSize="12sp"
+                    android:layout_marginEnd="4dp" />
+
+                <Button
+                    android:id="@+id/navSettings"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:text="⚙️\nEinstellungen"
+                    android:textColor="#ffffff"
+                    android:backgroundTint="#64748b"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Info -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="💡 Tipp: Kamera starten → 📱-Button → QR-Code scannen mit iPhone"
+                android:textColor="#64748b"
+                android:textSize="11sp"
+                android:layout_marginTop="16dp"
+                android:gravity="center" />
+
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

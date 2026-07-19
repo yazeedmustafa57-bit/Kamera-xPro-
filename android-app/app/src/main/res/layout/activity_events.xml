@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0f172a">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="#1e293b"
+        android:gravity="center_vertical">
+
+        <Button
+            android:id="@+id/backButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:text="←"
+            android:textColor="#ffffff"
+            android:backgroundTint="#475569"
+            android:textSize="18sp"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="📋 Ereignisverlauf"
+            android:textColor="#ffffff"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/clearAllButton"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="🗑️ Löschen"
+            android:textColor="#ffffff"
+            android:backgroundTint="#ef4444"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Stats bar -->
+    <LinearLayout
+        android:id="@+id/statsBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="#1e293b"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/statsMotions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🚶 0 Bewegungen"
+            android:textColor="#f59e0b"
+            android:textSize="12sp"
+            android:layout_marginEnd="16dp" />
+
+        <TextView
+            android:id="@+id/statsAlarms"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🚨 0 Alarme"
+            android:textColor="#ef4444"
+            android:textSize="12sp"
+            android:layout_marginEnd="16dp" />
+
+        <TextView
+            android:id="@+id/statsPhotos"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📸 0 Fotos"
+            android:textColor="#3b82f6"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Events list -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:id="@+id/eventsList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp" />
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/emptyText"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="Noch keine Ereignisse"
+        android:textColor="#64748b"
+        android:textSize="14sp"
+        android:visibility="gone" />
+</LinearLayout>

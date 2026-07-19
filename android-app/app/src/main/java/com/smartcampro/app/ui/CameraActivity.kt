@@ -1,6 +1,7 @@
 package com.smartcampro.app.ui
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.BatteryManager
@@ -23,6 +24,8 @@ import com.smartcampro.app.recording.EventManager
 import com.smartcampro.app.recording.RecordingManager
 import com.smartcampro.app.server.LocalStreamingServer
 import com.smartcampro.app.services.StreamingService
+import com.smartcampro.app.utils.Constants
+import com.smartcampro.app.utils.NotificationHelper
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.common.BitMatrix
@@ -40,6 +43,8 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     private lateinit var alarmManager: AlarmManager
     private lateinit var recordingManager: RecordingManager
     private lateinit var eventManager: EventManager
+    private lateinit var notificationHelper: NotificationHelper
+    private lateinit var prefs: SharedPreferences
     private var webSocketClient: WebSocketClient? = null
     private var apiClient: ApiClient? = null
     private var localServer: LocalStreamingServer? = null
@@ -96,7 +101,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     private var lastFpsTime = System.currentTimeMillis()
     private var motionCount = 0
     private var lastRecordingFrameTime = 0L
-    private val recordingFrameIntervalMs = 200L  // Frame every 200ms during recording
+    private val recordingFrameIntervalMs = 200L
 
     private val handler = Handler(Looper.getMainLooper())
     private val statusUpdateRunnable = object : Runnable {
@@ -108,22 +113,18 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         }
     }
 
-    // Recording timer
     private var recordingStartTime = 0L
     private val recordingTimerRunnable = object : Runnable {
         override fun run() {
             if (isRecording) {
                 val elapsed = System.currentTimeMillis() - recordingStartTime
                 val secs = (elapsed / 1000).toInt()
-                val mins = secs / 60
-                val remainSecs = secs % 60
-                recordingTimer.text = String.format("● REC %02d:%02d", mins, remainSecs)
+                recordingTimer.text = String.format("● REC %02d:%02d", secs / 60, secs % 60)
                 handler.postDelayed(this, 1000)
             }
         }
     }
 
-    // Alarm flash blink
     private var alarmFlashActive = false
     private val alarmFlashRunnable = object : Runnable {
         override fun run() {
@@ -137,10 +138,9 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
-
-        // Keep screen on
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
         token = intent.getStringExtra("token") ?: ""
         cameraName = intent.getStringExtra("camera_name") ?: "Camera"
         cameraId = intent.getStringExtra("camera_id") ?: ""
@@ -149,6 +149,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
 
         initViews()
         initManagers()
+        loadSettings()
         setupButtons()
         setupSettings()
         startStreaming()
@@ -177,7 +178,6 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         qrStatusText = findViewById(R.id.qrStatusText)
         settingsOverlay = findViewById(R.id.settingsOverlay)
 
-        // Settings controls
         flashToggle = findViewById(R.id.flashToggle)
         autoFlashToggle = findViewById(R.id.autoFlashToggle)
         nightOnlyToggle = findViewById(R.id.nightOnlyToggle)
@@ -194,16 +194,11 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         cameraManager = CameraManager(this)
         motionDetector = MotionDetector()
         motionDetector.setListener(this)
-        motionDetector.setSensitivity(0.5f)
 
         alarmManager = AlarmManager(this)
         alarmManager.onAlarmStateChanged = { active ->
             runOnUiThread {
-                if (active) {
-                    alarmButton.setBackgroundColor(getColor(android.R.color.holo_red_light))
-                } else {
-                    alarmButton.setBackgroundColor(Color.parseColor("#475569"))
-                }
+                alarmButton.setBackgroundColor(if (active) getColor(android.R.color.holo_red_light) else Color.parseColor("#475569"))
             }
         }
 
@@ -216,22 +211,43 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
                     recordingStartTime = System.currentTimeMillis()
                     handler.post(recordingTimerRunnable)
                     recordButton.setBackgroundColor(getColor(android.R.color.holo_red_light))
-                    recordButton.text = "⏹"
                 } else {
                     recordingIndicator.visibility = View.GONE
                     handler.removeCallbacks(recordingTimerRunnable)
                     recordButton.setBackgroundColor(Color.parseColor("#f59e0b"))
-                    recordButton.text = "🔴"
                 }
             }
         }
 
         eventManager = EventManager(this)
+        notificationHelper = NotificationHelper(this)
 
         if (!isStandalone) {
             webSocketClient = WebSocketClient(serverUrl, cameraId, token)
             apiClient = ApiClient(serverUrl)
         }
+    }
+
+    private fun loadSettings() {
+        val sensitivity = prefs.getInt("sensitivity", 50)
+        val volume = prefs.getInt("alarm_volume", 70)
+        val nightMode = prefs.getBoolean("night_mode", true)
+        val autoAlarmNight = prefs.getBoolean("auto_alarm_night", true)
+        val autoFlashNight = prefs.getBoolean("auto_flash_night", true)
+        val alarmOnMotionPref = prefs.getBoolean("alarm_on_motion", false)
+
+        motionDetector.setSensitivity((sensitivity.coerceIn(5, 100)) / 110f)
+        alarmManager.setVolume(volume)
+        nightOnlyFlash = nightMode
+        alarmOnMotion = alarmOnMotionPref
+        autoFlashOnMotion = autoFlashNight
+
+        sensitivitySeekBar.progress = sensitivity
+        volumeSeekBar.progress = volume
+        nightOnlyToggle.isChecked = nightMode
+        
+        autoFlashToggle.isChecked = autoFlashNight
+        alarmToggle.isChecked = alarmOnMotionPref
     }
 
     private fun setupButtons() {
@@ -247,37 +263,19 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         settingsButton.setOnClickListener { toggleSettings() }
         stopButton.setOnClickListener { stopStreaming() }
         qrOverlay.setOnClickListener { toggleQrOverlay() }
-        closeSettingsButton.setOnClickListener { toggleSettings() }
+        closeSettingsButton.setOnClickListener { saveAndCloseSettings() }
     }
 
     private fun setupSettings() {
         flashToggle.setOnCheckedChangeListener { _, isChecked ->
             cameraManager.setTorch(isChecked)
-            flashButton.setBackgroundColor(
-                if (isChecked) getColor(android.R.color.holo_orange_light)
-                else Color.parseColor("#475569")
-            )
+            flashButton.setBackgroundColor(if (isChecked) getColor(android.R.color.holo_orange_light) else Color.parseColor("#475569"))
         }
-
-        autoFlashToggle.setOnCheckedChangeListener { _, isChecked ->
-            autoFlashOnMotion = isChecked
-        }
-
-        nightOnlyToggle.setOnCheckedChangeListener { _, isChecked ->
-            nightOnlyFlash = isChecked
-        }
-
-        alarmToggle.setOnCheckedChangeListener { _, isChecked ->
-            alarmOnMotion = isChecked
-        }
-
-        alarmBlinkToggle.setOnCheckedChangeListener { _, isChecked ->
-            alarmBlinkEnabled = isChecked
-        }
-
-        vibrationToggle.setOnCheckedChangeListener { _, isChecked ->
-            alarmManager.setVibration(isChecked)
-        }
+        autoFlashToggle.setOnCheckedChangeListener { _, isChecked -> autoFlashOnMotion = isChecked }
+        nightOnlyToggle.setOnCheckedChangeListener { _, isChecked -> nightOnlyFlash = isChecked }
+        alarmToggle.setOnCheckedChangeListener { _, isChecked -> alarmOnMotion = isChecked }
+        alarmBlinkToggle.setOnCheckedChangeListener { _, isChecked -> alarmBlinkEnabled = isChecked }
+        vibrationToggle.setOnCheckedChangeListener { _, isChecked -> alarmManager.setVibration(isChecked) }
 
         volumeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -287,27 +285,34 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        autoRecordToggle.setOnCheckedChangeListener { _, isChecked ->
-            autoRecordOnMotion = isChecked
-        }
+        autoRecordToggle.setOnCheckedChangeListener { _, isChecked -> autoRecordOnMotion = isChecked }
 
         sensitivitySeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val sensitivity = (progress + 10) / 110f
-                motionDetector.setSensitivity(sensitivity.coerceIn(0.1f, 1.0f))
+                motionDetector.setSensitivity((progress.coerceIn(5, 100)) / 110f)
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
     }
 
+    private fun saveAndCloseSettings() {
+        prefs.edit().apply {
+            putInt("sensitivity", sensitivitySeekBar.progress.coerceIn(5, 100))
+            putInt("alarm_volume", volumeSeekBar.progress.coerceIn(0, 100))
+            putBoolean("night_mode", nightOnlyToggle.isChecked)
+            putBoolean("auto_alarm_night", alarmToggle.isChecked)
+            putBoolean("auto_flash_night", autoFlashToggle.isChecked)
+            putBoolean("alarm_on_motion", alarmToggle.isChecked)
+            apply()
+        }
+        settingsOverlay.visibility = View.GONE
+    }
+
     private fun toggleFlash() {
         cameraManager.toggleTorch()
         val isOn = cameraManager.isTorchEnabled()
-        flashButton.setBackgroundColor(
-            if (isOn) getColor(android.R.color.holo_orange_light)
-            else Color.parseColor("#475569")
-        )
+        flashButton.setBackgroundColor(if (isOn) getColor(android.R.color.holo_orange_light) else Color.parseColor("#475569"))
         flashToggle.isChecked = isOn
     }
 
@@ -318,15 +323,13 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         } else {
             alarmManager.startAlarm(5000)
             if (alarmBlinkEnabled) startAlarmFlash()
-
-            // Screenshot bei Alarm
             cameraManager.takeScreenshot { bitmap ->
                 bitmap?.let {
                     val path = saveScreenshot(it)
-                    eventManager.addEvent("alarm", "Alarm ausgelöst", path)
+                    eventManager.addEvent("alarm", "Alarm ausgeloest", path)
                 }
             }
-
+            notificationHelper.sendAlarmAlert("Alarm ausgeloest!", CameraActivity::class.java)
             Toast.makeText(this, "🚨 ALARM!", Toast.LENGTH_SHORT).show()
         }
     }
@@ -354,16 +357,13 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     private fun showQrCode() {
         val url = localServer?.getUrl() ?: return
         qrUrlText.text = url
-        qrStatusText.text = "Server läuft auf Port 8080"
-
+        qrStatusText.text = "Server laeuft auf Port 8080"
         try {
             val qrWriter = QRCodeWriter()
             val bitMatrix: BitMatrix = qrWriter.encode(url, BarcodeFormat.QR_CODE, 400, 400)
-            val width = bitMatrix.width
-            val height = bitMatrix.height
-            val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
-            for (x in 0 until width) {
-                for (y in 0 until height) {
+            val bmp = Bitmap.createBitmap(bitMatrix.width, bitMatrix.height, Bitmap.Config.RGB_565)
+            for (x in 0 until bitMatrix.width) {
+                for (y in 0 until bitMatrix.height) {
                     bmp.setPixel(x, y, if (bitMatrix[x, y]) AndroidColor.BLACK else AndroidColor.WHITE)
                 }
             }
@@ -374,11 +374,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     }
 
     private fun toggleSettings() {
-        if (settingsOverlay.visibility == View.VISIBLE) {
-            settingsOverlay.visibility = View.GONE
-        } else {
-            settingsOverlay.visibility = View.VISIBLE
-        }
+        settingsOverlay.visibility = if (settingsOverlay.visibility == View.VISIBLE) View.GONE else View.VISIBLE
     }
 
     private fun isNightTime(): Boolean {
@@ -390,16 +386,9 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         if (isStandalone) {
             statusText.text = "● Kamera aktiv"
             statusText.setTextColor(getColor(android.R.color.holo_green_light))
-
-            // LocalStreamingServer starten
-            localServer = LocalStreamingServer(port = 8080) { msg ->
-                Log.d("CameraActivity", "Server: $msg")
-            }
+            localServer = LocalStreamingServer(port = 8080) { msg -> Log.d("CameraActivity", "Server: $msg") }
             localServer?.start()
-
-            val url = localServer?.getUrl() ?: "unbekannt"
-            Toast.makeText(this, "Zuschauer: $url", Toast.LENGTH_LONG).show()
-
+            Toast.makeText(this, "Zuschauer: ${localServer?.getUrl()}", Toast.LENGTH_LONG).show()
             isConnected = true
         } else {
             statusText.text = "Verbinde mit Server..."
@@ -418,32 +407,22 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
                         isConnected = false
                     }
                 }
-                override fun onMessage(message: org.json.JSONObject) {
-                    handleWebSocketMessage(message)
-                }
+                override fun onMessage(message: org.json.JSONObject) { handleWebSocketMessage(message) }
                 override fun onError(error: String) {
-                    runOnUiThread {
-                        Toast.makeText(this@CameraActivity, "WS: $error", Toast.LENGTH_SHORT).show()
-                    }
+                    runOnUiThread { Toast.makeText(this@CameraActivity, "WS: $error", Toast.LENGTH_SHORT).show() }
                 }
             })
         }
-
         startCameraPreview()
         startStatusUpdates()
     }
 
-    private fun startStatusUpdates() {
-        handler.post(statusUpdateRunnable)
-    }
+    private fun startStatusUpdates() { handler.post(statusUpdateRunnable) }
 
     private fun startCameraPreview() {
         cameraManager.setFrameCallback { bitmap -> processFrame(bitmap) }
         cameraManager.startCamera(this, previewView) {
-            runOnUiThread {
-                Toast.makeText(this, "Kamera bereit", Toast.LENGTH_SHORT).show()
-                batteryText.text = "🔋 ${getBatteryLevel()}%"
-            }
+            runOnUiThread { batteryText.text = "🔋 ${getBatteryLevel()}%" }
         }
     }
 
@@ -451,32 +430,21 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         frameCount++
         val now = System.currentTimeMillis()
         if (now - lastFpsTime >= 1000) {
-            val fps = frameCount
-            frameCount = 0
-            lastFpsTime = now
+            val fps = frameCount; frameCount = 0; lastFpsTime = now
             runOnUiThread { fpsText.text = "FPS: $fps" }
         }
 
         motionDetector.processFrame(bitmap)
 
-        // An LocalStreamingServer senden
         if (isStandalone) {
             localServer?.pushFrame(bitmap)
-            localServer?.updateStatus(
-                getBatteryLevel(),
-                getWifiSignal(),
-                cameraName,
-                motionCount
-            )
+            localServer?.updateStatus(getBatteryLevel(), getWifiSignal(), cameraName, motionCount)
         }
 
-        // An WebSocket senden
         if (isConnected && !isStandalone) {
-            val base64 = cameraManager.bitmapToBase64(bitmap)
-            webSocketClient?.sendFrame(base64)
+            webSocketClient?.sendFrame(cameraManager.bitmapToBase64(bitmap))
         }
 
-        // Frames zur Aufnahme hinzufuegen
         if (isRecording && (now - lastRecordingFrameTime >= recordingFrameIntervalMs)) {
             recordingManager.addFrame(bitmap)
             lastRecordingFrameTime = now
@@ -485,57 +453,50 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
 
     override fun onMotionDetected(confidence: Float) {
         motionCount++
+        val pct = (confidence * 100).toInt()
         runOnUiThread {
-            Toast.makeText(this, "Bewegung #${motionCount}! (${(confidence * 100).toInt()}%)", Toast.LENGTH_SHORT).show()
-            statusText.text = "● Bewegung #${motionCount}"
+            Toast.makeText(this, "Bewegung #$motionCount! ($pct%)", Toast.LENGTH_SHORT).show()
+            statusText.text = "● Bewegung #$motionCount"
             statusText.setTextColor(getColor(android.R.color.holo_orange_light))
         }
 
-        // Server-Modus
         if (!isStandalone) {
             webSocketClient?.sendMotionDetected(confidence)
-            apiClient?.sendMotionEvent(token, cameraId, "motion", confidence,
-                object : ApiClient.ApiCallback {
-                    override fun onSuccess(response: String) {}
-                    override fun onError(error: String) {}
-                }
-            )
+            apiClient?.sendMotionEvent(token, cameraId, "motion", confidence, object : ApiClient.ApiCallback {
+                override fun onSuccess(response: String) {}
+                override fun onError(error: String) {}
+            })
         }
 
-        // Screenshot bei Bewegung
+        // Screenshot + Event
         cameraManager.takeScreenshot { bitmap ->
             bitmap?.let {
                 val path = saveScreenshot(it)
-                eventManager.addEvent("motion", "Bewegung erkannt (${(confidence * 100).toInt()}%)", path)
+                eventManager.addEvent("motion", "Bewegung erkannt ($pct%)", path)
             }
         }
 
-        // Auto-Aufnahme bei Bewegung
+        // Android Notification
+        notificationHelper.sendMotionAlert("Bewegung #$motionCount auf $cameraName ($pct%)", CameraActivity::class.java)
+
+        // Auto-Aufnahme
         if (autoRecordOnMotion && !isRecording) {
             runOnUiThread {
                 toggleRecording()
-                // Auto-Stop nach 10 Sekunden
-                handler.postDelayed({
-                    if (isRecording) toggleRecording()
-                }, 10000)
+                handler.postDelayed({ if (isRecording) toggleRecording() }, 10000)
             }
         }
 
-        // Auto-Taschenlampe bei Bewegung
-        if (autoFlashOnMotion) {
-            val shouldFlash = !nightOnlyFlash || isNightTime()
-            if (shouldFlash && !cameraManager.isTorchEnabled()) {
-                cameraManager.flashTorch(3, 200)
-            }
+        // Auto-Taschenlampe
+        if (autoFlashOnMotion && (!nightOnlyFlash || isNightTime()) && !cameraManager.isTorchEnabled()) {
+            cameraManager.flashTorch(3, 200)
         }
 
-        // Auto-Alarm bei Bewegung
-        if (alarmOnMotion) {
+        // Auto-Alarm
+        if (alarmOnMotion && !alarmManager.isAlarmActive()) {
             runOnUiThread {
-                if (!alarmManager.isAlarmActive()) {
-                    alarmManager.startAlarm(5000)
-                    if (alarmBlinkEnabled) startAlarmFlash()
-                }
+                alarmManager.startAlarm(5000)
+                if (alarmBlinkEnabled) startAlarmFlash()
             }
         }
 
@@ -568,14 +529,9 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
             val dir = File(filesDir, "screenshots").also { it.mkdirs() }
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
             val file = File(dir, "screenshot_${timestamp}.jpg")
-            FileOutputStream(file).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
-            }
+            FileOutputStream(file).use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) }
             file.absolutePath
-        } catch (e: Exception) {
-            Log.e("CameraActivity", "Save screenshot error", e)
-            null
-        }
+        } catch (e: Exception) { null }
     }
 
     private fun getBatteryLevel(): Int {
@@ -585,8 +541,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
 
     private fun getWifiSignal(): Int {
         val wm = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        @Suppress("DEPRECATION")
-        val info = wm.connectionInfo
+        @Suppress("DEPRECATION") val info = wm.connectionInfo
         val level = WifiManager.calculateSignalLevel(info.rssi, 5)
         return (level * 100) / 4
     }
@@ -595,12 +550,10 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         val battery = getBatteryLevel()
         val wifi = getWifiSignal()
         webSocketClient?.sendStatus("streaming", battery, wifi)
-        apiClient?.updateCameraStatus(token, cameraId, "streaming", battery, wifi,
-            object : ApiClient.ApiCallback {
-                override fun onSuccess(response: String) {}
-                override fun onError(error: String) {}
-            }
-        )
+        apiClient?.updateCameraStatus(token, cameraId, "streaming", battery, wifi, object : ApiClient.ApiCallback {
+            override fun onSuccess(response: String) {}
+            override fun onError(error: String) {}
+        })
         runOnUiThread { batteryText.text = "🔋 $battery%" }
     }
 
@@ -608,16 +561,10 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         when (message.optString("type", "")) {
             "command" -> when (message.optString("command", "")) {
                 "stop" -> stopStreaming()
-                "switch_camera" -> {
-                    cameraManager.switchCamera()
-                    startCameraPreview()
-                }
+                "switch_camera" -> { cameraManager.switchCamera(); startCameraPreview() }
                 "flash_on" -> cameraManager.setTorch(true)
                 "flash_off" -> cameraManager.setTorch(false)
-                "alarm" -> {
-                    alarmManager.startAlarm(5000)
-                    if (alarmBlinkEnabled) startAlarmFlash()
-                }
+                "alarm" -> { alarmManager.startAlarm(5000); if (alarmBlinkEnabled) startAlarmFlash() }
                 "record_start" -> { if (!isRecording) toggleRecording() }
                 "record_stop" -> { if (isRecording) toggleRecording() }
             }
@@ -629,17 +576,9 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         handler.removeCallbacks(statusUpdateRunnable)
         handler.removeCallbacks(recordingTimerRunnable)
         stopAlarmFlash()
-
-        // Aufnahme stoppen
         if (isRecording) recordingManager.stopRecording()
-
-        // Alarm stoppen
         alarmManager.stopAlarm()
-
-        // Server stoppen
-        localServer?.stop()
-        localServer = null
-
+        localServer?.stop(); localServer = null
         webSocketClient?.disconnect()
         cameraManager.shutdown()
         try { stopService(Intent(this, StreamingService::class.java)) } catch (_: Exception) {}
