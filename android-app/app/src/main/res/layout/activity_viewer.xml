@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="#0f172a">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:background="#1e293b" android:gravity="center_vertical">
+    <LinearLayout android:id="@+id/headerLayout" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:background="#1e293b" android:gravity="center_vertical">
         <Button android:id="@+id/backButton" android:layout_width="36dp" android:layout_height="36dp" android:text="←" android:textColor="#ffffff" android:background="@drawable/bg_button_dark" android:textSize="16sp" android:layout_marginEnd="12dp" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Meine Kameras" android:textColor="#ffffff" android:textSize="18sp" android:textStyle="bold" />
         <TextView android:id="@+id/connectionStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Verbinde..." android:textColor="#94a3b8" android:textSize="12sp" />
