@@ -2,35 +2,26 @@ package com.smartcampro.app.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.*
+import android.widget.Button
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.smartcampro.app.R
-import com.smartcampro.app.utils.Constants
-import com.smartcampro.app.utils.UserManager
+import com.smartcampro.app.data.local.TokenStorage
 
 class HomeActivity : AppCompatActivity() {
-
-    private lateinit var userManager: UserManager
+    private lateinit var tokenStorage: TokenStorage
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
-        userManager = UserManager(this)
+        tokenStorage = TokenStorage(this)
 
-        val prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
-        val username = userManager.getLoggedInUser() ?: "Gast"
-        val userInfoText = findViewById<TextView>(R.id.userInfoText)
-        userInfoText.text = "👤 $username"
+        val userInfo = findViewById<TextView>(R.id.userInfoText)
+        userInfo.text = "Eingeloggt: ${tokenStorage.getDisplayName() ?: tokenStorage.getUserEmail()}"
 
         findViewById<Button>(R.id.startCameraButton).setOnClickListener {
-            val intent = Intent(this, CameraActivity::class.java).apply {
-                putExtra("token", "standalone")
-                putExtra("camera_name", "Kamera $username")
-                putExtra("camera_id", "")
-                putExtra("server_url", prefs.getString("cloud_server", "") ?: "")
-            }
-            startActivity(intent)
+            startActivity(Intent(this, CameraActivity::class.java))
         }
 
         findViewById<Button>(R.id.startViewerButton).setOnClickListener {
@@ -38,8 +29,7 @@ class HomeActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.logoutButton).setOnClickListener {
-            userManager.logout()
-            prefs.edit().clear().apply()
+            tokenStorage.clearAll()
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
         }

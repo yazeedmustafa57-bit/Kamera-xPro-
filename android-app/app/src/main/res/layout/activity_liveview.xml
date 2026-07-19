@@ -1,122 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#000000">
-
-    <ImageView
-        android:id="@+id/liveImageView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="fitCenter"
-        android:background="#000000" />
-
-    <LinearLayout
-        android:id="@+id/loadingView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical">
-
-        <ProgressBar
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:indeterminateTint="#3b82f6" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Verbinde mit Kamera..."
-            android:textColor="#94a3b8"
-            android:textSize="14sp"
-            android:layout_marginTop="12dp" />
+    android:layout_width="match_parent" android:layout_height="match_parent" android:background="#000000">
+    <SurfaceView android:id="@+id/remoteSurface" android:layout_width="match_parent" android:layout_height="match_parent" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="12dp" android:background="#CC000000" android:gravity="center_vertical">
+        <Button android:id="@+id/backButton" android:layout_width="32dp" android:layout_height="32dp" android:text="←" android:textColor="#ffffff" android:background="@drawable/bg_button_dark" android:textSize="14sp" android:layout_marginEnd="12dp" />
+        <TextView android:id="@+id/cameraNameText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textColor="#ffffff" android:textSize="15sp" android:textStyle="bold" />
+        <View android:layout_width="8dp" android:layout_height="8dp" android:background="@drawable/bg_status_online" android:layout_marginEnd="6dp" />
+        <TextView android:id="@+id/statusText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Verbinde..." android:textColor="#22c55e" android:textSize="12sp" />
     </LinearLayout>
-
-    <!-- Top bar -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:background="#CC000000"
-        android:gravity="center_vertical">
-
-        <Button
-            android:id="@+id/backButton"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:text="←"
-            android:textColor="#ffffff"
-            android:background="@drawable/bg_button_dark"
-            android:textSize="14sp"
-            android:layout_marginEnd="12dp" />
-
-        <TextView
-            android:id="@+id/cameraNameText"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="#ffffff"
-            android:textSize="15sp"
-            android:textStyle="bold" />
-
-        <View
-            android:id="@+id/liveDot"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
-            android:background="@drawable/bg_status_online"
-            android:layout_marginEnd="6dp" />
-
-        <TextView
-            android:id="@+id/statusText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Live"
-            android:textColor="#22c55e"
-            android:textSize="12sp" />
-    </LinearLayout>
-
-    <!-- Bottom controls -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:paddingBottom="24dp"
-        android:background="#CC000000"
-        android:gravity="center">
-
-        <Button
-            android:id="@+id/screenshotBtn"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:text="📸"
-            android:textColor="#ffffff"
-            android:background="@drawable/bg_button_primary"
-            android:textSize="16sp"
-            android:layout_marginEnd="6dp" />
-
-        <Button
-            android:id="@+id/alarmBtn"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:text="🚨"
-            android:textColor="#ffffff"
-            android:background="@drawable/bg_button_red"
-            android:textSize="16sp"
-            android:layout_marginEnd="6dp" />
-
-        <Button
-            android:id="@+id/fullscreenBtn"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:text="⛶"
-            android:textColor="#ffffff"
-            android:background="@drawable/bg_button_dark"
-            android:textSize="16sp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="bottom" android:orientation="horizontal" android:padding="16dp" android:background="#CC000000" android:gravity="center">
+        <Button android:id="@+id/alarmBtn" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="🚨 Alarm" android:textColor="#ffffff" android:background="@drawable/bg_button_red" android:textSize="13sp" android:textAllCaps="false" android:layout_marginEnd="6dp" />
+        <Button android:id="@+id/screenshotBtn" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="📸 Foto" android:textColor="#ffffff" android:background="@drawable/bg_button_primary" android:textSize="13sp" android:textAllCaps="false" android:layout_marginEnd="6dp" />
+        <Button android:id="@+id/fullscreenBtn" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="⛶ Voll" android:textColor="#ffffff" android:background="@drawable/bg_button_dark" android:textSize="13sp" android:textAllCaps="false" />
     </LinearLayout>
 </FrameLayout>

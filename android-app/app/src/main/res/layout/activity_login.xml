@@ -7,89 +7,33 @@
     android:gravity="center"
     android:padding="32dp">
 
-    <!-- Logo -->
     <LinearLayout
-        android:layout_width="88dp"
-        android:layout_height="88dp"
-        android:orientation="vertical"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:gravity="center"
         android:background="@drawable/bg_button_primary"
         android:layout_marginBottom="20dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="📹"
-            android:textSize="40sp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📹" android:textSize="36sp" />
     </LinearLayout>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="SmartCam Pro"
-        android:textColor="#ffffff"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="4dp" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SmartCam Pro" android:textColor="#ffffff" android:textSize="28sp" android:textStyle="bold" android:layout_marginBottom="4dp" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Professionelles Sicherheitssystem" android:textColor="#64748b" android:textSize="14sp" android:layout_marginBottom="8dp" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Professionelles Sicherheitssystem"
-        android:textColor="#64748b"
-        android:textSize="14sp"
-        android:layout_marginBottom="36dp" />
+    <!-- Toggle Login/Register -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:background="#1e293b" android:layout_marginBottom="24dp" android:layout_marginTop="8dp">
+        <Button android:id="@+id/tabLogin" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="Anmelden" android:textColor="#ffffff" android:background="@drawable/bg_button_primary" android:textAllCaps="false" android:textSize="14sp" />
+        <Button android:id="@+id/tabRegister" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="Registrieren" android:textColor="#94a3b8" android:background="#00000000" android:textAllCaps="false" android:textSize="14sp" />
+    </LinearLayout>
 
-    <EditText
-        android:id="@+id/loginUsername"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:hint="E-Mail oder Benutzername"
-        android:textColor="#ffffff"
-        android:textColorHint="#475569"
-        android:background="@drawable/bg_input"
-        android:inputType="text"
-        android:textSize="15sp"
-        android:layout_marginBottom="14dp" />
+    <EditText android:id="@+id/emailInput" android:layout_width="match_parent" android:layout_height="52dp" android:hint="E-Mail" android:inputType="textEmailAddress" android:textColor="#ffffff" android:textColorHint="#475569" android:background="@drawable/bg_input" android:textSize="15sp" android:layout_marginBottom="12dp" />
 
-    <EditText
-        android:id="@+id/loginPassword"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:hint="Passwort"
-        android:inputType="textPassword"
-        android:textColor="#ffffff"
-        android:textColorHint="#475569"
-        android:background="@drawable/bg_input"
-        android:textSize="15sp"
-        android:layout_marginBottom="24dp" />
+    <EditText android:id="@+id/passwordInput" android:layout_width="match_parent" android:layout_height="52dp" android:hint="Passwort" android:inputType="textPassword" android:textColor="#ffffff" android:textColorHint="#475569" android:background="@drawable/bg_input" android:textSize="15sp" android:layout_marginBottom="12dp" />
 
-    <Button
-        android:id="@+id/loginButton"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:text="Anmelden"
-        android:textColor="#ffffff"
-        android:background="@drawable/bg_button_primary"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textAllCaps="false"
-        android:layout_marginBottom="12dp" />
+    <EditText android:id="@+id/displayNameInput" android:layout_width="match_parent" android:layout_height="52dp" android:hint="Anzeigename" android:inputType="textPersonName" android:textColor="#ffffff" android:textColorHint="#475569" android:background="@drawable/bg_input" android:textSize="15sp" android:layout_marginBottom="24dp" android:visibility="gone" />
 
-    <TextView
-        android:id="@+id/loginError"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="#ef4444"
-        android:textSize="13sp"
-        android:layout_marginBottom="12dp" />
+    <Button android:id="@+id/submitButton" android:layout_width="match_parent" android:layout_height="52dp" android:text="Anmelden" android:textColor="#ffffff" android:background="@drawable/bg_button_primary" android:textSize="16sp" android:textStyle="bold" android:textAllCaps="false" android:layout_marginBottom="12dp" />
 
-    <TextView
-        android:id="@+id/skipLoginButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="App testen (ohne Anmeldung)"
-        android:textColor="#475569"
-        android:textSize="13sp"
-        android:padding="12dp" />
+    <TextView android:id="@+id/errorText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#ef4444" android:textSize="13sp" android:layout_marginBottom="8dp" />
+
+    <TextView android:id="@+id/skipButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="App testen (ohne Anmeldung)" android:textColor="#475569" android:textSize="13sp" android:padding="12dp" />
 </LinearLayout>

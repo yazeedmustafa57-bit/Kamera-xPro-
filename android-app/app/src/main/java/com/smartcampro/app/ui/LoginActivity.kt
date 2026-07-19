@@ -1,106 +1,137 @@
 package com.smartcampro.app.ui
 
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
-import android.view.Gravity
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.smartcampro.app.R
-import com.smartcampro.app.network.ApiClient
-import com.smartcampro.app.utils.Constants
-import com.smartcampro.app.utils.UserManager
-import org.json.JSONObject
+import com.smartcampro.app.data.api.*
+import com.smartcampro.app.data.local.TokenStorage
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class LoginActivity : AppCompatActivity() {
 
-    private lateinit var userManager: UserManager
-    private lateinit var apiClient: ApiClient
+    private lateinit var tokenStorage: TokenStorage
+    private var isRegisterMode = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        userManager = UserManager(this)
+        tokenStorage = TokenStorage(this)
 
-        if (!userManager.hasUsers()) {
-            userManager.createUser("admin", "Admin123!", "admin")
-        }
-
-        if (userManager.isLoggedIn()) {
+        if (tokenStorage.isLoggedIn()) {
             startHome()
             return
         }
 
         setContentView(R.layout.activity_login)
-        val prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
-        apiClient = ApiClient(prefs.getString("cloud_server", "") ?: "")
 
-        val loginUsername = findViewById<EditText>(R.id.loginUsername)
-        val loginPassword = findViewById<EditText>(R.id.loginPassword)
-        val loginButton = findViewById<Button>(R.id.loginButton)
-        val loginError = findViewById<TextView>(R.id.loginError)
-        val skipLoginButton = findViewById<Button>(R.id.skipLoginButton)
+        val emailInput = findViewById<EditText>(R.id.emailInput)
+        val passwordInput = findViewById<EditText>(R.id.passwordInput)
+        val displayNameInput = findViewById<EditText>(R.id.displayNameInput)
+        val submitButton = findViewById<Button>(R.id.submitButton)
+        val tabLogin = findViewById<Button>(R.id.tabLogin)
+        val tabRegister = findViewById<Button>(R.id.tabRegister)
+        val errorText = findViewById<TextView>(R.id.errorText)
+        val skipButton = findViewById<TextView>(R.id.skipButton)
 
-        loginButton.setOnClickListener {
-            val username = loginUsername.text.toString().trim()
-            val password = loginPassword.text.toString()
+        tabLogin.setOnClickListener { setMode(false) }
+        tabRegister.setOnClickListener { setMode(true) }
 
-            if (username.isEmpty() || password.isEmpty()) {
-                loginError.text = "Bitte ausfuellen"
+        submitButton.setOnClickListener {
+            val email = emailInput.text.toString().trim()
+            val password = passwordInput.text.toString()
+            val displayName = displayNameInput.text.toString().trim()
+
+            if (email.isEmpty() || password.isEmpty()) {
+                errorText.text = "Bitte alles ausfuellen"
                 return@setOnClickListener
             }
 
-            loginButton.isEnabled = false
-            loginButton.text = "Anmelden..."
-            loginError.text = ""
+            submitButton.isEnabled = false
+            submitButton.text = if (isRegisterMode) "Registrieren..." else "Anmelden..."
+            errorText.text = ""
 
-            // Cloud-Login
-            apiClient.login(username, password, object : ApiClient.ApiCallback {
-                override fun onSuccess(response: String) {
-                    try {
-                        val json = JSONObject(response)
-                        val token = json.getString("access_token")
-                        val user = json.getJSONObject("user")
-
-                        prefs.edit().apply {
-                            putString(Constants.PREF_AUTH_TOKEN, token)
-                            putString(Constants.PREF_LOGGED_IN_USER, user.getString("username"))
-                            putBoolean(Constants.PREF_CLOUD_MODE, true)
-                            apply()
-                        }
-
-                        userManager.setLoggedInUser(user.getString("username"))
-                        runOnUiThread { startHome() }
-                    } catch (e: Exception) {
-                        runOnUiThread {
-                            loginError.text = "Anmeldung fehlgeschlagen"
-                            loginButton.isEnabled = true
-                            loginButton.text = "Anmelden"
-                        }
-                    }
-                }
-
-                override fun onError(error: String) {
-                    // Fallback: lokal
-                    if (userManager.validateUser(username, password)) {
-                        userManager.setLoggedInUser(username)
-                        prefs.edit().putBoolean(Constants.PREF_CLOUD_MODE, false).apply()
-                        runOnUiThread { startHome() }
-                    } else {
-                        runOnUiThread {
-                            loginError.text = "Falsches Passwort"
-                            loginButton.isEnabled = true
-                            loginButton.text = "Anmelden"
-                        }
-                    }
-                }
-            })
+            if (isRegisterMode) {
+                register(email, password, displayName, submitButton, errorText)
+            } else {
+                login(email, password, submitButton, errorText)
+            }
         }
 
-        skipLoginButton.setOnClickListener {
-            userManager.setLoggedInUser("admin")
-            prefs.edit().putBoolean(Constants.PREF_CLOUD_MODE, false).apply()
+        skipButton.setOnClickListener {
+            tokenStorage.saveUser("demo", "demo@test.com", "Demo")
+            tokenStorage.saveTokens("demo-token", "demo-refresh")
             startHome()
         }
+    }
+
+    private fun setMode(register: Boolean) {
+        isRegisterMode = register
+        findViewById<EditText>(R.id.displayNameInput).visibility = if (register) View.VISIBLE else View.GONE
+        findViewById<Button>(R.id.submitButton).text = if (register) "Registrieren" else "Anmelden"
+        findViewById<Button>(R.id.tabLogin).setBackgroundResource(if (register) R.drawable.bg_button_dark else R.drawable.bg_button_primary)
+        findViewById<Button>(R.id.tabRegister).setBackgroundResource(if (register) R.drawable.bg_button_primary else R.drawable.bg_button_dark)
+    }
+
+    private fun login(email: String, password: String, button: Button, errorText: TextView) {
+        val api = RetrofitClient.getApi()
+        api.login(LoginRequest(email, password)).enqueue(object : Callback<AuthResponse> {
+            override fun onResponse(call: Call<AuthResponse>, response: Response<AuthResponse>) {
+                if (response.isSuccessful) {
+                    val auth = response.body()!!
+                    tokenStorage.saveTokens(auth.accessToken, auth.refreshToken)
+                    tokenStorage.saveUser(auth.user.id, auth.user.email, auth.user.displayName)
+                    startHome()
+                } else {
+                    val error = response.errorBody()?.string() ?: "Login fehlgeschlagen"
+                    runOnUiThread {
+                        errorText.text = error
+                        button.isEnabled = true
+                        button.text = "Anmelden"
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<AuthResponse>, t: Throwable) {
+                runOnUiThread {
+                    errorText.text = "Server nicht erreichbar: ${t.message}"
+                    button.isEnabled = true
+                    button.text = "Anmelden"
+                }
+            }
+        })
+    }
+
+    private fun register(email: String, password: String, displayName: String, button: Button, errorText: TextView) {
+        val api = RetrofitClient.getApi()
+        api.register(RegisterRequest(email, password, displayName.ifEmpty { null })).enqueue(object : Callback<AuthResponse> {
+            override fun onResponse(call: Call<AuthResponse>, response: Response<AuthResponse>) {
+                if (response.isSuccessful) {
+                    val auth = response.body()!!
+                    tokenStorage.saveTokens(auth.accessToken, auth.refreshToken)
+                    tokenStorage.saveUser(auth.user.id, auth.user.email, auth.user.displayName)
+                    startHome()
+                } else {
+                    val error = response.errorBody()?.string() ?: "Registrierung fehlgeschlagen"
+                    runOnUiThread {
+                        errorText.text = error
+                        button.isEnabled = true
+                        button.text = "Registrieren"
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<AuthResponse>, t: Throwable) {
+                runOnUiThread {
+                    errorText.text = "Server nicht erreichbar: ${t.message}"
+                    button.isEnabled = true
+                    button.text = "Registrieren"
+                }
+            }
+        })
     }
 
     private fun startHome() {
