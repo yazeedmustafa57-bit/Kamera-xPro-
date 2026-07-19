@@ -1,27 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
-    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
-    <application android:name=".SmartCamApplication" android:allowBackup="true" android:icon="@drawable/ic_launcher" android:label="SmartCam Pro" android:roundIcon="@drawable/ic_launcher" android:supportsRtl="true" android:theme="@style/Theme.SmartCamPro" android:usesCleartextTraffic="true">
+    <application android:allowBackup="true" android:icon="@drawable/ic_launcher" android:label="SmartCam Pro" android:roundIcon="@drawable/ic_launcher" android:supportsRtl="true" android:theme="@style/Theme.SmartCamPro" android:usesCleartextTraffic="true">
         <activity android:name=".ui.LoginActivity" android:exported="true" android:screenOrientation="portrait" android:theme="@style/Theme.SmartCamPro">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
         <activity android:name=".ui.HomeActivity" android:screenOrientation="portrait" android:theme="@style/Theme.SmartCamPro" />
         <activity android:name=".ui.CameraActivity" android:screenOrientation="portrait" android:theme="@style/Theme.SmartCamPro" />
         <activity android:name=".ui.ViewerActivity" android:screenOrientation="portrait" android:theme="@style/Theme.SmartCamPro" />
-        <activity android:name=".ui.LiveViewActivity" android:screenOrientation="landscape" android:theme="@style/Theme.SmartCamPro" />
+        <activity android:name=".ui.LiveViewActivity" android:screenOrientation="portrait" android:theme="@style/Theme.SmartCamPro" />
     </application>
 </manifest>

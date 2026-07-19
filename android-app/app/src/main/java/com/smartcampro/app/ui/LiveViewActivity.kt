@@ -12,29 +12,26 @@ import io.socket.client.Socket
 import org.json.JSONObject
 
 class LiveViewActivity : AppCompatActivity() {
-    private lateinit var tokenStorage: TokenStorage
     private var socket: Socket? = null
-    private var cameraId = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_liveview)
-        tokenStorage = TokenStorage(this)
-        cameraId = intent.getStringExtra("camera_id") ?: ""
+        val ts = TokenStorage(this)
+        val cameraId = intent.getStringExtra("camera_id") ?: ""
         val cameraName = intent.getStringExtra("camera_name") ?: "Kamera"
 
         findViewById<TextView>(R.id.cameraNameText).text = cameraName
         findViewById<Button>(R.id.backButton).setOnClickListener { finish() }
         findViewById<Button>(R.id.alarmBtn).setOnClickListener {
-            socket?.emit("webrtc:offer", JSONObject().apply { put("cameraId", cameraId) })
+            socket?.emit("camera:motion", JSONObject().apply { put("cameraId", cameraId); put("type", "alarm_triggered") })
             Toast.makeText(this, "🚨 Alarm gesendet!", Toast.LENGTH_SHORT).show()
         }
         findViewById<Button>(R.id.screenshotBtn).setOnClickListener { Toast.makeText(this, "Screenshot gespeichert", Toast.LENGTH_SHORT).show() }
 
         val prefs = getSharedPreferences("smartcam_prefs", MODE_PRIVATE)
         val serverUrl = prefs.getString("server_url", "") ?: ""
-        val token = tokenStorage.getAccessToken() ?: ""
-
+        val token = ts.getAccessToken() ?: ""
         if (serverUrl.isEmpty()) { finish(); return }
 
         try {
