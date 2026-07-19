@@ -18,15 +18,15 @@
         android:layout_marginTop="70dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:background="#CCFF0000"
-        android:paddingHorizontal="12dp"
+        android:background="@drawable/bg_button_red"
+        android:paddingHorizontal="14dp"
         android:paddingVertical="6dp"
         android:visibility="gone">
 
         <View
             android:id="@+id/recordingDot"
-            android:layout_width="10dp"
-            android:layout_height="10dp"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
             android:background="@android:color/white"
             android:layout_marginEnd="6dp" />
 
@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:text="● REC 00:00"
             android:textColor="#ffffff"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -48,41 +48,56 @@
         android:background="#66FF0000"
         android:visibility="gone" />
 
-    <!-- Top overlay -->
+    <!-- Top status bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:background="#80000000"
-        android:gravity="center_vertical">
+        android:orientation="vertical"
+        android:background="#CC000000"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
 
-        <TextView
-            android:id="@+id/statusText"
-            android:layout_width="0dp"
+        <!-- Status row -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="● Starte..."
-            android:textColor="#f59e0b"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/batteryText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🔋 --%"
-            android:textColor="#ffffff"
-            android:textSize="12sp"
-            android:layout_marginEnd="16dp" />
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/bg_status_online"
+                android:layout_marginEnd="8dp" />
 
-        <TextView
-            android:id="@+id/fpsText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="FPS: 0"
-            android:textColor="#94a3b8"
-            android:textSize="12sp" />
+            <TextView
+                android:id="@+id/statusText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="● Kamera aktiv"
+                android:textColor="#22c55e"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/batteryText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔋 --%"
+                android:textColor="#ffffff"
+                android:textSize="12sp"
+                android:layout_marginEnd="12dp" />
+
+            <TextView
+                android:id="@+id/fpsText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="FPS: 0"
+                android:textColor="#94a3b8"
+                android:textSize="12sp" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- QR Code Overlay -->
@@ -92,469 +107,174 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:background="#CC000000"
+        android:background="#DD000000"
         android:padding="32dp"
         android:visibility="gone">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="📱 Zuschauer-Modus"
-            android:textColor="#ffffff"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="iPhone mit diesem QR-Code scannen"
-            android:textColor="#94a3b8"
-            android:textSize="14sp"
-            android:layout_marginBottom="16dp" />
-
-        <ImageView
-            android:id="@+id/qrCodeImage"
-            android:layout_width="220dp"
-            android:layout_height="220dp"
-            android:background="#ffffff"
-            android:padding="12dp"
-            android:layout_marginBottom="16dp" />
-
-        <TextView
-            android:id="@+id/qrUrlText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="http://192.168.1.100:8080"
-            android:textColor="#3b82f6"
-            android:textSize="14sp"
-            android:layout_marginBottom="8dp" />
-
-        <TextView
-            android:id="@+id/qrStatusText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Server läuft"
-            android:textColor="#22c55e"
-            android:textSize="12sp"
-            android:layout_marginBottom="24dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tippe irgendwo zum Schließen"
-            android:textColor="#64748b"
-            android:textSize="12sp" />
-    </LinearLayout>
-
-    <!-- Settings Overlay -->
-    <LinearLayout
-        android:id="@+id/settingsOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:background="#DD111827"
-        android:padding="24dp"
-        android:visibility="gone">
-
-        <ScrollView
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/bg_card"
+            android:padding="24dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal">
+                android:text="📱 Zuschauer verbinden"
+                android:textColor="#ffffff"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="⚙️ Einstellungen"
-                    android:textColor="#ffffff"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="24dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="QR-Code mit dem anderen Geraet scannen"
+                android:textColor="#94a3b8"
+                android:textSize="12sp"
+                android:layout_marginBottom="16dp" />
 
-                <!-- LED / Taschenlampe -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="🔦 Taschenlampe"
-                    android:textColor="#f59e0b"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
+            <ImageView
+                android:id="@+id/qrCodeImage"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
+                android:background="#ffffff"
+                android:padding="10dp"
+                android:layout_marginBottom="12dp" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="4dp">
+            <TextView
+                android:id="@+id/qrUrlText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#3b82f6"
+                android:textSize="13sp" />
 
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="EIN/AUS"
-                        android:textColor="#ffffff"
-                        android:textSize="13sp" />
-
-                    <Switch
-                        android:id="@+id/flashToggle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Automatisch bei Bewegung"
-                        android:textColor="#ffffff"
-                        android:textSize="13sp" />
-
-                    <Switch
-                        android:id="@+id/autoFlashToggle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="16dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Nur nachts aktiv (18-06 Uhr)"
-                        android:textColor="#ffffff"
-                        android:textSize="13sp" />
-
-                    <Switch
-                        android:id="@+id/nightOnlyToggle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true" />
-                </LinearLayout>
-
-                <!-- Alarm -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="🚨 Alarm"
-                    android:textColor="#ef4444"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Sirene bei Bewegung"
-                        android:textColor="#ffffff"
-                        android:textSize="13sp" />
-
-                    <Switch
-                        android:id="@+id/alarmToggle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Blinkende LED"
-                        android:textColor="#ffffff"
-                        android:textSize="13sp" />
-
-                    <Switch
-                        android:id="@+id/alarmBlinkToggle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Vibration"
-                        android:textColor="#ffffff"
-                        android:textSize="13sp" />
-
-                    <Switch
-                        android:id="@+id/vibrationToggle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="16dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Lautstärke"
-                        android:textColor="#ffffff"
-                        android:textSize="13sp" />
-
-                    <SeekBar
-                        android:id="@+id/volumeSeekBar"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:max="100"
-                        android:progress="70" />
-                </LinearLayout>
-
-                <!-- Aufnahme -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="🎬 Aufnahme"
-                    android:textColor="#22c55e"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Auto-Aufnahme bei Bewegung"
-                        android:textColor="#ffffff"
-                        android:textSize="13sp" />
-
-                    <Switch
-                        android:id="@+id/autoRecordToggle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="16dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Bewegungs-Speicher (Sek)"
-                        android:textColor="#ffffff"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:id="@+id/motionRecordDuration"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="10"
-                        android:textColor="#f59e0b"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:layout_marginEnd="8dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="16dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Bewegungsempfindlichkeit"
-                        android:textColor="#ffffff"
-                        android:textSize="13sp" />
-
-                    <SeekBar
-                        android:id="@+id/sensitivitySeekBar"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:max="100"
-                        android:progress="50" />
-                </LinearLayout>
-
-                <!-- Close button -->
-                <Button
-                    android:id="@+id/closeSettingsButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:text="Schließen"
-                    android:textColor="#ffffff"
-                    android:backgroundTint="#475569"
-                    android:layout_marginTop="8dp" />
-
-            </LinearLayout>
-        </ScrollView>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tippe irgendwo zum Schliessen"
+                android:textColor="#475569"
+                android:textSize="11sp"
+                android:layout_marginTop="16dp" />
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- Bottom controls - Row 1 -->
+    <!-- Bottom controls -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:paddingBottom="4dp"
-        android:background="#80000000"
-        android:gravity="center">
+        android:orientation="vertical"
+        android:background="#CC000000"
+        android:paddingHorizontal="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="16dp">
 
-        <Button
-            android:id="@+id/switchCameraButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="📷"
-            android:textColor="#ffffff"
-            android:textSize="14sp"
-            android:backgroundTint="#475569"
-            android:layout_marginEnd="3dp" />
+        <!-- Row 1: Main controls -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="8dp">
 
-        <Button
-            android:id="@+id/screenshotButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="📸"
-            android:textColor="#ffffff"
-            android:textSize="14sp"
-            android:backgroundTint="#06b6d4"
-            android:layout_marginEnd="3dp" />
+            <Button
+                android:id="@+id/switchCameraButton"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:text="🔄"
+                android:textColor="#ffffff"
+                android:background="@drawable/bg_button_dark"
+                android:textSize="16sp"
+                android:layout_marginEnd="4dp" />
 
-        <Button
-            android:id="@+id/recordButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="🔴"
-            android:textColor="#ffffff"
-            android:textSize="14sp"
-            android:backgroundTint="#f59e0b"
-            android:layout_marginEnd="3dp" />
+            <Button
+                android:id="@+id/screenshotButton"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:text="📸"
+                android:textColor="#ffffff"
+                android:background="@drawable/bg_button_primary"
+                android:textSize="16sp"
+                android:layout_marginEnd="4dp" />
 
-        <Button
-            android:id="@+id/flashButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="🔦"
-            android:textColor="#ffffff"
-            android:textSize="14sp"
-            android:backgroundTint="#475569"
-            android:layout_marginEnd="3dp" />
+            <Button
+                android:id="@+id/recordButton"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:text="🔴"
+                android:textColor="#ffffff"
+                android:background="@drawable/bg_button_dark"
+                android:textSize="16sp"
+                android:layout_marginEnd="4dp" />
 
-        <Button
-            android:id="@+id/alarmButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="🚨"
-            android:textColor="#ffffff"
-            android:textSize="14sp"
-            android:backgroundTint="#475569" />
-    </LinearLayout>
+            <Button
+                android:id="@+id/flashButton"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:text="🔦"
+                android:textColor="#ffffff"
+                android:background="@drawable/bg_button_dark"
+                android:textSize="16sp"
+                android:layout_marginEnd="4dp" />
 
-    <!-- Bottom controls - Row 2 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:layout_marginBottom="56dp"
-        android:orientation="horizontal"
-        android:paddingHorizontal="8dp"
-        android:paddingBottom="4dp"
-        android:background="#80000000"
-        android:gravity="center">
+            <Button
+                android:id="@+id/alarmButton"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:text="🚨"
+                android:textColor="#ffffff"
+                android:background="@drawable/bg_button_dark"
+                android:textSize="16sp" />
+        </LinearLayout>
 
-        <Button
-            android:id="@+id/qrButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="📱"
-            android:textColor="#ffffff"
-            android:textSize="14sp"
-            android:backgroundTint="#8b5cf6"
-            android:layout_marginEnd="3dp" />
+        <!-- Row 2: Secondary controls -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
 
-        <Button
-            android:id="@+id/settingsButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="⚙️"
-            android:textColor="#ffffff"
-            android:textSize="14sp"
-            android:backgroundTint="#64748b"
-            android:layout_marginEnd="3dp" />
+            <Button
+                android:id="@+id/qrButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="📱 QR-Code"
+                android:textColor="#ffffff"
+                android:background="@drawable/bg_button_purple"
+                android:textSize="12sp"
+                android:textAllCaps="false"
+                android:layout_marginEnd="4dp" />
 
-        <Button
-            android:id="@+id/stopButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="⏹"
-            android:textColor="#ffffff"
-            android:textSize="14sp"
-            android:backgroundTint="#ef4444" />
+            <Button
+                android:id="@+id/settingsButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="⚙️"
+                android:textColor="#ffffff"
+                android:background="@drawable/bg_button_dark"
+                android:textSize="14sp"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/stopButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="⏹ Stopp"
+                android:textColor="#ffffff"
+                android:background="@drawable/bg_button_red"
+                android:textSize="12sp"
+                android:textAllCaps="false" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

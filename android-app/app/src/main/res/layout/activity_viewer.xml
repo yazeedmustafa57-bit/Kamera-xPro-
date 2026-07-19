@@ -20,73 +20,79 @@
             android:layout_height="36dp"
             android:text="←"
             android:textColor="#ffffff"
-            android:backgroundTint="#475569"
-            android:textSize="16sp" />
+            android:background="@drawable/bg_button_dark"
+            android:textSize="16sp"
+            android:layout_marginEnd="12dp" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Kameras"
+            android:text="Meine Kameras"
             android:textColor="#ffffff"
             android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginStart="12dp" />
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/connectionStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🟡 Verbinde..."
+            android:text="Verbinde..."
             android:textColor="#94a3b8"
             android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- Camera List -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_weight="1">
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:id="@+id/cameraList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp" />
+            android:padding="16dp" />
     </ScrollView>
 
-    <!-- Empty state -->
     <LinearLayout
         android:id="@+id/emptyState"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:visibility="gone">
+        android:visibility="gone"
+        android:padding="32dp">
+
+        <LinearLayout
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:gravity="center"
+            android:background="@drawable/bg_card">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📷"
+                android:textSize="36sp" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="📷"
-            android:textSize="64sp"
-            android:layout_marginBottom="16dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Noch keine Kameras"
+            android:text="Keine Kameras gefunden"
             android:textColor="#ffffff"
             android:textSize="18sp"
             android:textStyle="bold"
+            android:layout_marginTop="16dp"
             android:layout_marginBottom="8dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Starte eine Kamera auf einem\nanderen Geraet mit demselben Account"
+            android:text="Starte eine Kamera auf einem anderen\nGeraet mit demselben Account"
             android:textColor="#64748b"
             android:textSize="14sp"
-            android:gravity="center" />
+            android:gravity="center"
+            android:lineSpacingExtra="4dp" />
     </LinearLayout>
 </LinearLayout>

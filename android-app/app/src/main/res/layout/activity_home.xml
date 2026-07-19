@@ -32,7 +32,6 @@
                 android:id="@+id/userInfoText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Angemeldet"
                 android:textColor="#64748b"
                 android:textSize="11sp" />
         </LinearLayout>
@@ -42,9 +41,10 @@
             android:layout_width="wrap_content"
             android:layout_height="32dp"
             android:text="Abmelden"
-            android:textColor="#ffffff"
-            android:backgroundTint="#475569"
-            android:textSize="11sp" />
+            android:textColor="#94a3b8"
+            android:background="@drawable/bg_button_dark"
+            android:textSize="11sp"
+            android:textAllCaps="false" />
     </LinearLayout>
 
     <ScrollView
@@ -55,120 +55,171 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp"
-            android:gravity="center_horizontal">
+            android:padding="20dp">
 
-            <!-- Role Selection -->
+            <!-- Title -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Was moechtest du tun?"
+                android:text="Willkommen!"
                 android:textColor="#ffffff"
-                android:textSize="20sp"
+                android:textSize="24sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="4dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Waehle den Modus fuer dieses Geraet"
+                android:text="Was moechtest du mit diesem Geraet tun?"
                 android:textColor="#64748b"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:layout_marginBottom="24dp" />
 
-            <!-- Kamera Card -->
+            <!-- Camera Card -->
             <LinearLayout
-                android:id="@+id/cameraCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="#1e293b"
-                android:padding="24dp"
-                android:gravity="center"
+                android:background="@drawable/bg_card"
+                android:padding="20dp"
                 android:layout_marginBottom="16dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="📷"
-                    android:textSize="48sp"
-                    android:layout_marginBottom="12dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <LinearLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_button_green">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📷"
+                            android:textSize="24sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="14dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Kamera-Modus"
+                            android:textColor="#ffffff"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Dieses Geraet zur Ueberwachung nutzen"
+                            android:textColor="#94a3b8"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Dieses Geraet als\nKamera verwenden"
-                    android:textColor="#ffffff"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Stelle dein Tablet/Handy auf\nund es streamt live in die Cloud"
-                    android:textColor="#94a3b8"
+                    android:text="Stelle dein Tablet oder Handy auf, und es streamt live in die Cloud. Du kannst es von ueberall aus anschauen."
+                    android:textColor="#64748b"
                     android:textSize="13sp"
-                    android:gravity="center" />
+                    android:layout_marginBottom="16dp"
+                    android:lineSpacingExtra="4dp" />
 
                 <Button
                     android:id="@+id/startCameraButton"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
-                    android:text="Kamera starten"
+                    android:text="📷 Kamera starten"
                     android:textColor="#ffffff"
-                    android:backgroundTint="#22c55e"
+                    android:background="@drawable/bg_button_green"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    android:layout_marginTop="16dp" />
+                    android:textAllCaps="false" />
             </LinearLayout>
 
-            <!-- Zuschauer Card -->
+            <!-- Viewer Card -->
             <LinearLayout
-                android:id="@+id/viewerCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="#1e293b"
-                android:padding="24dp"
-                android:gravity="center">
+                android:background="@drawable/bg_card"
+                android:padding="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <LinearLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_button_primary">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="👁"
+                            android:textSize="24sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="14dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Zuschauer-Modus"
+                            android:textColor="#ffffff"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Deine Kameras von ueberall ansehen"
+                            android:textColor="#94a3b8"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="👁"
-                    android:textSize="48sp"
-                    android:layout_marginBottom="12dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Dieses Geraet als\nZuschauer verwenden"
-                    android:textColor="#ffffff"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Schau auf deine Kameras\nvon ueberall auf der Welt"
-                    android:textColor="#94a3b8"
+                    android:text="Schau auf all deine Kameras, egal wo du bist. Live-Streaming ueber Cloud."
+                    android:textColor="#64748b"
                     android:textSize="13sp"
-                    android:gravity="center" />
+                    android:layout_marginBottom="16dp"
+                    android:lineSpacingExtra="4dp" />
 
                 <Button
                     android:id="@+id/startViewerButton"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
-                    android:text="Zuschauer-Modus"
+                    android:text="👁 Zuschauer-Modus"
                     android:textColor="#ffffff"
-                    android:backgroundTint="#3b82f6"
+                    android:background="@drawable/bg_button_primary"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    android:layout_marginTop="16dp" />
+                    android:textAllCaps="false" />
             </LinearLayout>
 
         </LinearLayout>
