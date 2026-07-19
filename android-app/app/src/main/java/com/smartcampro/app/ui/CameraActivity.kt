@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.os.BatteryManager
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -56,7 +57,7 @@ class CameraActivity : AppCompatActivity() {
 
         RetrofitClient.setBaseUrl(serverUrl)
         updateBattery()
-        registerCamera(serverUrl, token)
+        loadOrCreateCamera(serverUrl, token)
 
         findViewById<Button>(R.id.switchCameraButton).setOnClickListener { switchCamera() }
         findViewById<Button>(R.id.flashButton).setOnClickListener { toggleFlash() }
@@ -65,44 +66,59 @@ class CameraActivity : AppCompatActivity() {
         findViewById<Button>(R.id.stopButton).setOnClickListener { stop() }
 
         val handler = android.os.Handler(mainLooper)
-        val batteryRunnable = object : Runnable {
-            override fun run() {
-                updateBattery()
-                handler.postDelayed(this, 30000)
-            }
-        }
-        handler.post(batteryRunnable)
+        handler.post(object : Runnable {
+            override fun run() { updateBattery(); handler.postDelayed(this, 30000) }
+        })
 
         requestPermissions()
     }
 
     private fun requestPermissions() {
         val perms = mutableListOf<String>()
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            perms.add(android.Manifest.permission.CAMERA)
-        }
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            perms.add(android.Manifest.permission.RECORD_AUDIO)
-        }
-        if (perms.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, perms.toTypedArray(), 100)
-        } else {
-            startCamera()
-        }
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) perms.add(android.Manifest.permission.CAMERA)
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) perms.add(android.Manifest.permission.RECORD_AUDIO)
+        if (perms.isNotEmpty()) ActivityCompat.requestPermissions(this, perms.toTypedArray(), 100) else startCamera()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 100) { startCamera() }
+        if (requestCode == 100) startCamera()
     }
 
-    private fun registerCamera(serverUrl: String, token: String) {
+    private fun loadOrCreateCamera(serverUrl: String, token: String) {
+        // First: try to load existing cameras
+        RetrofitClient.getApi().listCameras("Bearer $token").enqueue(object : Callback<List<CameraResponse>> {
+            override fun onResponse(call: Call<List<CameraResponse>>, response: Response<List<CameraResponse>>) {
+                if (response.isSuccessful) {
+                    val cams = response.body() ?: emptyList()
+                    if (cams.isNotEmpty()) {
+                        // Use first existing camera
+                        cameraId = cams[0].id
+                        runOnUiThread {
+                            Toast.makeText(this@CameraActivity, "Kamera verbunden: ${cams[0].name}", Toast.LENGTH_SHORT).show()
+                        }
+                        connectSocket(serverUrl, token)
+                    } else {
+                        // Create new camera
+                        createCamera(serverUrl, token)
+                    }
+                } else {
+                    createCamera(serverUrl, token)
+                }
+            }
+            override fun onFailure(call: Call<List<CameraResponse>>, t: Throwable) {
+                createCamera(serverUrl, token)
+            }
+        })
+    }
+
+    private fun createCamera(serverUrl: String, token: String) {
         RetrofitClient.getApi().createCamera("Bearer $token", CameraCreate("Kamera", "Android")).enqueue(object : Callback<CameraResponse> {
             override fun onResponse(call: Call<CameraResponse>, response: Response<CameraResponse>) {
                 if (response.isSuccessful) {
                     cameraId = response.body()!!.id
                     connectSocket(serverUrl, token)
-                    runOnUiThread { Toast.makeText(this@CameraActivity, "Kamera registriert!", Toast.LENGTH_SHORT).show() }
+                    runOnUiThread { Toast.makeText(this@CameraActivity, "Neue Kamera erstellt!", Toast.LENGTH_SHORT).show() }
                 }
             }
             override fun onFailure(call: Call<CameraResponse>, t: Throwable) {
@@ -155,9 +171,9 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        cameraProviderFuture.addListener({
-            cameraProvider = cameraProviderFuture.get()
+        val future = ProcessCameraProvider.getInstance(this)
+        future.addListener({
+            cameraProvider = future.get()
             bindCamera()
         }, ContextCompat.getMainExecutor(this))
     }
@@ -186,7 +202,7 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun triggerAlarm() {
-        Toast.makeText(this, "🚨 ALARM GESCHICKT!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "🚨 ALARM!", Toast.LENGTH_SHORT).show()
         val vibrator = getSystemService(VIBRATOR_SERVICE) as? android.os.Vibrator
         vibrator?.vibrate(android.os.VibrationEffect.createOneShot(500, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
         try {
@@ -201,53 +217,47 @@ class CameraActivity : AppCompatActivity() {
 
     private fun showQRCode() {
         if (cameraId.isEmpty()) {
-            Toast.makeText(this, "Kamera wird noch registriert...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Kamera wird noch verbunden...", Toast.LENGTH_SHORT).show()
             return
         }
         val serverUrl = ts.getServerUrl() ?: return
         val token = ts.getAccessToken() ?: return
 
-        // QR code data: server URL + camera ID + token
         val qrData = JSONObject().apply {
             put("server", serverUrl)
             put("camera", cameraId)
             put("token", token)
         }.toString()
 
-        // Generate QR code bitmap
         val qrBitmap = generateQRCode(qrData, 600)
 
         val dialogView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = android.view.Gravity.CENTER
-            setPadding(32, 32, 32, 32)
+            gravity = Gravity.CENTER
+            setPadding(48, 48, 48, 48)
             setBackgroundColor(Color.parseColor("#1e293b"))
         }
 
-        val titleText = TextView(this).apply {
-            text = "QR-Code scannen"
+        dialogView.addView(TextView(this).apply {
+            text = "📱 QR-Code scannen"
             setTextColor(Color.WHITE)
-            textSize = 18f
-            setPadding(0, 0, 0, 16)
-            gravity = android.view.Gravity.CENTER
-        }
+            textSize = 20f
+            setPadding(0, 0, 0, 24)
+            gravity = Gravity.CENTER
+        })
 
-        val imageView = ImageView(this).apply {
+        dialogView.addView(ImageView(this).apply {
             setImageBitmap(qrBitmap)
-            setPadding(16, 16, 16, 16)
-        }
+            setPadding(32, 32, 32, 32)
+        })
 
-        val infoText = TextView(this).apply {
-            text = "Scanne diesen Code mit der\nZuschauer-App um dich zu verbinden"
+        dialogView.addView(TextView(this).apply {
+            text = "Oeffne die Zuschauer-App\nund druecke 'QR Scan'"
             setTextColor(Color.parseColor("#94a3b8"))
-            textSize = 14f
-            gravity = android.view.Gravity.CENTER
-            setPadding(0, 8, 0, 0)
-        }
-
-        dialogView.addView(titleText)
-        dialogView.addView(imageView)
-        dialogView.addView(infoText)
+            textSize = 16f
+            gravity = Gravity.CENTER
+            setPadding(0, 16, 0, 0)
+        })
 
         AlertDialog.Builder(this)
             .setView(dialogView)
@@ -268,8 +278,8 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun updateBattery() {
-        val batteryIntent = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        batteryIntent?.let {
+        val intent = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        intent?.let {
             val level = it.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
             val scale = it.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
             batteryLevel = if (scale > 0) (level * 100 / scale) else 0
