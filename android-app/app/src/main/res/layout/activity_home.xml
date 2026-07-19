@@ -5,12 +5,13 @@
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SmartCam Pro" android:textColor="#ffffff" android:textSize="18sp" android:textStyle="bold" />
             <TextView android:id="@+id/userInfoText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#64748b" android:textSize="11sp" />
         </LinearLayout>
+        <Button android:id="@+id/serverButton" android:layout_width="wrap_content" android:layout_height="32dp" android:text="⚙️ Server" android:textColor="#94a3b8" android:background="@drawable/bg_button_dark" android:textSize="11sp" android:textAllCaps="false" android:layout_marginEnd="6dp" />
         <Button android:id="@+id/logoutButton" android:layout_width="wrap_content" android:layout_height="32dp" android:text="Abmelden" android:textColor="#94a3b8" android:background="@drawable/bg_button_dark" android:textSize="11sp" android:textAllCaps="false" />
     </LinearLayout>
     <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Willkommen!" android:textColor="#ffffff" android:textSize="24sp" android:textStyle="bold" android:layout_marginBottom="4dp" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Waehle den Modus fuer dieses Geraet" android:textColor="#64748b" android:textSize="14sp" android:layout_marginBottom="20dp" />
+            <TextView android:id="@+id/serverStatusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="⚠️ Kein Server konfiguriert" android:textColor="#f59e0b" android:textSize="13sp" android:layout_marginBottom="20dp" android:padding="12dp" android:background="@drawable/bg_card" />
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/bg_card" android:padding="20dp" android:layout_marginBottom="16dp">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
                     <LinearLayout android:layout_width="48dp" android:layout_height="48dp" android:gravity="center" android:background="@drawable/bg_button_green"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📷" android:textSize="24sp" /></LinearLayout>

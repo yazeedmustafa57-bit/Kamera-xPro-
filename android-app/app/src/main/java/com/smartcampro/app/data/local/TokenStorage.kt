@@ -13,6 +13,8 @@ class TokenStorage(context: Context) {
     fun getUserId(): String? = prefs.getString("user_id", null)
     fun getUserEmail(): String? = prefs.getString("user_email", null)
     fun getDisplayName(): String? = prefs.getString("user_name", null)
+    fun saveServerUrl(url: String) { prefs.edit().putString("server_url", url).apply() }
+    fun getServerUrl(): String? = prefs.getString("server_url", null)
     fun isLoggedIn(): Boolean = getAccessToken() != null
     fun clearAll() { prefs.edit().clear().apply() }
 }
