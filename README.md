@@ -1,44 +1,45 @@
-# SmartCam Pro - Professionelles Sicherheitssystem
+# SmartCam Pro v3.0 - Professionelle Multi-User Sicherheitsplattform
 
 ## APK Download
 🔗 https://raw.githubusercontent.com/yazeedmustafa57-bit/Kamera-xPro-/main/SmartCamPro.apk
 
-## So funktioniert es (wie AlfredCamera)
+## Architektur (wie AlfredCamera)
+```
+Kamera-Geraet → HTTPS/WSS → Backend Server → HTTPS/WSS → Zuschauer-Geraet
+                                │
+                          WebRTC P2P
+                          (direkt zwischen Geraeten)
+```
 
-### Schritt 1: App installieren
-- Auf beide Geraete installieren (Tablet + iPhone/Handy)
-
-### Schritt 2: Account erstellen
-- App oeffnen → "Anmelden" oder "App testen"
-
-### Schritt 3: Modus waehlen
-- **Kamera-Modus:** Dieses Geraet streamt live
-- **Zuschauer-Modus:** Sieh deine Kameras von ueberall
-
-### Schritt 4: Fertig!
-- Kamera streamt zur Cloud
-- Zuschauer empfaengt den Stream
-- Ueberall auf der Welt zugaenglich
+## Backend (Node.js + PostgreSQL)
+```bash
+cd backend
+npm install
+# PostgreSQL Datenbank einrichten
+# .env.example kopieren und ausfuellen
+npm start
+```
 
 ## Features
 - ☁️ Cloud-Streaming (ueberall zugaenglich)
+- 🔐 JWT Auth mit Refresh Tokens
 - 📷 Live-Video mit CameraX
 - 🚶 KI-Bewegungserkennung
-- 🚨 Alarm-Sirene mit Vibration
-- 🔦 Taschenlampe (auto bei Bewegung)
-- 🎬 Video-Aufnahme
-- 📸 Screenshots
-- 📱 QR-Code zum Verbinden
-- 🔐 Benutzerverwaltung mit JWT
-- 💰 Subscription-System (Free/Pro/Business)
+- 🚨 Alarm-Sirene
+- 📱 QR-Code Pairing
+- 🔐 Verschluesselte Token-Speicherung
+- 💰 Subscription-System
 
-## Technologie
-- Android App: Kotlin + CameraX
-- Backend: FastAPI + PostgreSQL
-- Streaming: WebSocket + MJPEG
-- Cloud: Railway / Render / Docker
+## Sicherheit
+- Passwoerter: bcrypt (12 Runden)
+- Tokens: EncryptedSharedPreferences
+- API: JWT + Owner-ID Filterung
+- Server: Rate Limiting + Helmet
+- Transport: HTTPS/WSS
 
-## Voraussetzungen
-- Android 7.0+
-- Kein Internet erforderlich (lokal)
-- Cloud fuer globalen Zugriff
+## Technologien
+- Backend: Node.js + Express + PostgreSQL
+- Realtime: Socket.IO
+- Auth: JWT + bcrypt
+- Android: Kotlin + Retrofit + CameraX
+- WebRTC: Socket.IO Signaling (P2P bereit)
