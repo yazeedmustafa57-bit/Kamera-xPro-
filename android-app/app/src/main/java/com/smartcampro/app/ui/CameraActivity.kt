@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.net.wifi.WifiManager
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.view.PreviewView
@@ -15,7 +16,13 @@ import com.smartcampro.app.camera.CameraManager
 import com.smartcampro.app.detection.MotionDetector
 import com.smartcampro.app.network.ApiClient
 import com.smartcampro.app.network.WebSocketClient
+import com.smartcampro.app.server.LocalStreamingServer
 import com.smartcampro.app.services.StreamingService
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.qrcode.QRCodeWriter
+import com.google.zxing.common.BitMatrix
+import android.graphics.Color as AndroidColor
+import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -27,6 +34,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     private lateinit var motionDetector: MotionDetector
     private var webSocketClient: WebSocketClient? = null
     private var apiClient: ApiClient? = null
+    private var localServer: LocalStreamingServer? = null
 
     private lateinit var previewView: PreviewView
     private lateinit var statusText: TextView
@@ -35,7 +43,12 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     private lateinit var switchCameraButton: Button
     private lateinit var screenshotButton: Button
     private lateinit var recordButton: Button
+    private lateinit var qrButton: Button
     private lateinit var stopButton: Button
+    private lateinit var qrOverlay: LinearLayout
+    private lateinit var qrCodeImage: ImageView
+    private lateinit var qrUrlText: TextView
+    private lateinit var qrStatusText: TextView
 
     private var token = ""
     private var cameraName = ""
@@ -52,7 +65,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     private val statusUpdateRunnable = object : Runnable {
         override fun run() {
             if (isConnected && !isStandalone) {
-                updateStatus()
+                updateServerStatus()
                 handler.postDelayed(this, 10000)
             }
         }
@@ -75,7 +88,12 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         switchCameraButton = findViewById(R.id.switchCameraButton)
         screenshotButton = findViewById(R.id.screenshotButton)
         recordButton = findViewById(R.id.recordButton)
+        qrButton = findViewById(R.id.qrButton)
         stopButton = findViewById(R.id.stopButton)
+        qrOverlay = findViewById(R.id.qrOverlay)
+        qrCodeImage = findViewById(R.id.qrCodeImage)
+        qrUrlText = findViewById(R.id.qrUrlText)
+        qrStatusText = findViewById(R.id.qrStatusText)
 
         cameraManager = CameraManager(this)
         motionDetector = MotionDetector()
@@ -98,13 +116,58 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         }
         screenshotButton.setOnClickListener { takeScreenshot() }
         recordButton.setOnClickListener { toggleRecording() }
+        qrButton.setOnClickListener { toggleQrOverlay() }
         stopButton.setOnClickListener { stopStreaming() }
+
+        // QR-Overlay schliessen bei Tippen
+        qrOverlay.setOnClickListener { toggleQrOverlay() }
+    }
+
+    private fun toggleQrOverlay() {
+        if (qrOverlay.visibility == View.VISIBLE) {
+            qrOverlay.visibility = View.GONE
+        } else {
+            showQrCode()
+            qrOverlay.visibility = View.VISIBLE
+        }
+    }
+
+    private fun showQrCode() {
+        val url = localServer?.getUrl() ?: return
+        qrUrlText.text = url
+        qrStatusText.text = "Server läuft auf Port 8080"
+
+        try {
+            val qrWriter = QRCodeWriter()
+            val bitMatrix: BitMatrix = qrWriter.encode(url, BarcodeFormat.QR_CODE, 400, 400)
+            val width = bitMatrix.width
+            val height = bitMatrix.height
+            val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+            for (x in 0 until width) {
+                for (y in 0 until height) {
+                    bmp.setPixel(x, y, if (bitMatrix[x, y]) AndroidColor.BLACK else AndroidColor.WHITE)
+                }
+            }
+            qrCodeImage.setImageBitmap(bmp)
+        } catch (e: Exception) {
+            Toast.makeText(this, "QR-Code Fehler: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun startStreaming() {
         if (isStandalone) {
-            statusText.text = "● Kamera aktiv (lokal)"
+            statusText.text = "● Kamera aktiv"
             statusText.setTextColor(getColor(android.R.color.holo_green_light))
+
+            // LocalStreamingServer starten
+            localServer = LocalStreamingServer(port = 8080) { msg ->
+                Log.d("CameraActivity", "Server: $msg")
+            }
+            localServer?.start()
+
+            val url = localServer?.getUrl() ?: "unbekannt"
+            Toast.makeText(this, "Zuschauer: $url", Toast.LENGTH_LONG).show()
+
             isConnected = true
         } else {
             statusText.text = "Verbinde mit Server..."
@@ -135,14 +198,11 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         }
 
         startCameraPreview()
-        if (!isStandalone) {
-            handler.postDelayed(statusUpdateRunnable, 10000)
-        }
+        startStatusUpdates()
+    }
 
-        try {
-            val serviceIntent = Intent(this, StreamingService::class.java)
-            startForegroundService(serviceIntent)
-        } catch (_: Exception) {}
+    private fun startStatusUpdates() {
+        handler.post(statusUpdateRunnable)
     }
 
     private fun startCameraPreview() {
@@ -166,6 +226,18 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
 
         motionDetector.processFrame(bitmap)
 
+        // An LocalStreamingServer senden (Zuschauer-Modus)
+        if (isStandalone) {
+            localServer?.pushFrame(bitmap)
+            localServer?.updateStatus(
+                getBatteryLevel(),
+                getWifiSignal(),
+                cameraName,
+                motionCount
+            )
+        }
+
+        // An WebSocket senden (Server-Modus)
         if (isConnected && !isStandalone) {
             val base64 = cameraManager.bitmapToBase64(bitmap)
             webSocketClient?.sendFrame(base64)
@@ -190,7 +262,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
             )
         }
 
-        // Immer Screenshots bei Bewegung speichern
+        // Screenshot bei Bewegung speichern
         cameraManager.takeScreenshot { bitmap -> bitmap?.let { saveScreenshot(it) } }
     }
 
@@ -206,11 +278,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     private fun toggleRecording() {
         isRecording = !isRecording
         runOnUiThread {
-            recordButton.text = if (isRecording) "Stop" else "Aufnahme"
-            recordButton.setBackgroundColor(
-                if (isRecording) getColor(android.R.color.holo_red_light)
-                else getColor(android.R.color.holo_blue_dark)
-            )
+            recordButton.text = if (isRecording) "⏹" else "🔴"
         }
         if (isRecording) {
             Toast.makeText(this, "Aufnahme gestartet", Toast.LENGTH_SHORT).show()
@@ -243,7 +311,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
         return (level * 100) / 4
     }
 
-    private fun updateStatus() {
+    private fun updateServerStatus() {
         val battery = getBatteryLevel()
         val wifi = getWifiSignal()
         webSocketClient?.sendStatus("streaming", battery, wifi)
@@ -253,7 +321,7 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
                 override fun onError(error: String) {}
             }
         )
-        runOnUiThread { batteryText.text = "Batterie: $battery%" }
+        runOnUiThread { batteryText.text = "🔋 $battery%" }
     }
 
     private fun handleWebSocketMessage(message: org.json.JSONObject) {
@@ -271,6 +339,11 @@ class CameraActivity : AppCompatActivity(), MotionDetector.Listener {
     private fun stopStreaming() {
         isConnected = false
         handler.removeCallbacks(statusUpdateRunnable)
+
+        // Server stoppen
+        localServer?.stop()
+        localServer = null
+
         webSocketClient?.disconnect()
         cameraManager.shutdown()
         try { stopService(Intent(this, StreamingService::class.java)) } catch (_: Exception) {}

@@ -23,7 +23,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="● Starting..."
+            android:text="● Starte..."
             android:textColor="#f59e0b"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -32,7 +32,7 @@
             android:id="@+id/batteryText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Battery: --%"
+            android:text="🔋 --%"
             android:textColor="#ffffff"
             android:textSize="12sp"
             android:layout_marginEnd="16dp" />
@@ -43,6 +43,68 @@
             android:layout_height="wrap_content"
             android:text="FPS: 0"
             android:textColor="#94a3b8"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- QR Code Overlay (hidden by default) -->
+    <LinearLayout
+        android:id="@+id/qrOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#CC000000"
+        android:padding="32dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📱 Zuschauer-Modus"
+            android:textColor="#ffffff"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="iPhone mit diesem QR-Code scannen"
+            android:textColor="#94a3b8"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp" />
+
+        <ImageView
+            android:id="@+id/qrCodeImage"
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:background="#ffffff"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/qrUrlText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="http://192.168.1.100:8080"
+            android:textColor="#3b82f6"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/qrStatusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Server läuft"
+            android:textColor="#22c55e"
+            android:textSize="12sp"
+            android:layout_marginBottom="24dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tippe irgendwo zum Schließen"
+            android:textColor="#64748b"
             android:textSize="12sp" />
     </LinearLayout>
 
@@ -61,42 +123,53 @@
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_weight="1"
-            android:text="Switch"
+            android:text="📷"
             android:textColor="#ffffff"
-            android:textSize="12sp"
+            android:textSize="16sp"
             android:backgroundTint="#475569"
-            android:layout_marginEnd="6dp" />
+            android:layout_marginEnd="4dp" />
 
         <Button
             android:id="@+id/screenshotButton"
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_weight="1"
-            android:text="Photo"
+            android:text="📸"
             android:textColor="#ffffff"
-            android:textSize="12sp"
+            android:textSize="16sp"
             android:backgroundTint="#06b6d4"
-            android:layout_marginEnd="6dp" />
+            android:layout_marginEnd="4dp" />
 
         <Button
             android:id="@+id/recordButton"
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_weight="1"
-            android:text="Record"
+            android:text="🔴"
             android:textColor="#ffffff"
-            android:textSize="12sp"
+            android:textSize="16sp"
             android:backgroundTint="#f59e0b"
-            android:layout_marginEnd="6dp" />
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/qrButton"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:text="📱"
+            android:textColor="#ffffff"
+            android:textSize="16sp"
+            android:backgroundTint="#8b5cf6"
+            android:layout_marginEnd="4dp" />
 
         <Button
             android:id="@+id/stopButton"
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_weight="1"
-            android:text="Stop"
+            android:text="⏹"
             android:textColor="#ffffff"
-            android:textSize="12sp"
+            android:textSize="16sp"
             android:backgroundTint="#ef4444" />
     </LinearLayout>
 </FrameLayout>

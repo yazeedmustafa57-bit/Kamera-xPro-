@@ -1,166 +1,76 @@
-# 📹 SmartCam Pro v1.2
+# SmartCam Pro v1.6 - Professionelles Sicherheitskamera-System
 
-> **Professionelles Sicherheitskamera-System** – Verwandle dein altes Smartphone in eine professionelle Überwachungskamera.
+## Zuschauer-Modus (NEU! 📱)
 
-[![Version](https://img.shields.io/badge/version-1.2.0-green)]()
-[![APK](https://img.shields.io/badge/APK-download-blue)]()
-[![License](https://img.shields.io/badge/license-MIT-orange)]()
+### So funktioniert es:
+1. **Tablet (Kamera):** Starte die App und tippe auf "📷 Kamera starten (ohne Server)"
+2. **QR-Code anzeigen:** Tippe auf das 📱-Symbol unten
+3. **iPhone (Zuschauer):** Scanne den QR-Code mit der Kamera-App
+4. **Fertig!** Du siehst das Live-Bild auf dem iPhone
+
+### Voraussetzungen:
+- Beide Geräte im gleichen WLAN
+- Kein PC erforderlich
+- Kein Internet erforderlich
+
+### Schritt-für-Schritt:
+1. SmartCam Pro auf dem Tablet installieren
+2. App öffnen und auf "📷 Kamera starten (ohne Server)" tippen
+3. Kamera startet automatisch
+4. Auf das 📱-Symbol unten tippen
+5. QR-Code wird angezeigt
+6. iPhone-Kamera öffnen und QR-Code scannen
+7. Safari öffnet sich mit dem Live-Bild
+
+### Features im Zuschauer-Modus:
+- Live-Bild in Echtzeit
+- Batteriestatus des Tablets
+- WLAN-Signal des Tablets
+- Anzahl verbundener Zuschauer
+- Screenshot-Funktion
+- Vollbild-Modus
+- Automatische Wiederverbindung
 
 ---
 
-## ⚡ Schnellstart (2 Minuten)
+## Server-Modus (mit PC)
 
-### 1. APK herunterladen
-**👉 https://github.com/yazeedmustafa57-bit/Kamera-xPro-/releases/tag/v1.2**
-
-- Klicke auf **SmartCamPro-v1.2.apk**
-- Lade die Datei herunter
-- Installiere sie auf deinem Android-Gerät
-
-### 2. Server auf PC starten
-
+### Installation:
 ```bash
-# Windows: Doppelklick auf "Server-starten.bat"
-# Oder manuell:
+# Backend starten
 cd backend
-python -m venv venv
-venv\Scripts\activate          # Windows
-source venv/bin/activate       # Mac/Linux
 pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+python main.py
 
-### 3. Deine PC-IP finden
-
-**Windows:** `Windows+R` → `cmd` → `ipconfig` → **IPv4-Adresse**
-
-**Mac:** Systemeinstellungen → Netzwerk → WLAN
-
-### 4. App öffnen und anmelden
-
-- **Server-URL:** `http://DEINE-PC-IP:8000`
-- **Benutzername:** `admin`
-- **Passwort:** `Admin123!`
-
----
-
-## 📱 APK Installation
-
-### Download
-1. Öffne: https://github.com/yazeedmustafa57-bit/Kamera-xPro-/releases/tag/v1.2
-2. Klicke auf **SmartCamPro-v1.2.apk**
-3. Lade die Datei herunter
-
-### Installation
-1. Öffne die heruntergeladene APK-Datei
-2. Bestätige die Installation
-3. Bei "Unbekannte App": **Erlauben** klicken
-
-### ⚠️ Download funktioniert nicht?
-- Kopiere die APK per USB auf dein Tablet
-- Oder sende sie dir selbst per WhatsApp/E-Mail
-
----
-
-## 🖥️ Server auf PC starten
-
-### Voraussetzungen
-- [Python 3.10+](https://www.python.org/downloads/)
-- [Git](https://git-scm.com/downloads)
-
-### Windows (einfach)
-1. Doppelklick auf `Server-starten.bat`
-2. Terminal öffnet sich und startet den Server
-3. **Terminal offen lassen!**
-
-### Mac/Linux
-```bash
-chmod +x server-starten.sh
-./server-starten.sh
-```
-
-### Manuell
-```bash
-git clone https://github.com/yazeedmustafa57-bit/Kamera-xPro-.git
-cd Kamera-xPro-/backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
-
----
-
-## 📷 Kameras
-
-### Kamera-Modus (altes Smartphone als Kamera)
-- Öffne SmartCam Pro App
-- Server-URL, Benutzername, Passwort eingeben
-- **Anmelden** drücken
-- Kamera startet automatisch
-
-### Dashboard (Web-Browser)
-```bash
+# Frontend starten
 cd frontend
 npm install
-npm run start
-```
-Öffne: http://localhost:3000
-
----
-
-## 🔐 Login-Daten
-
-| Feld | Wert |
-|------|------|
-| Benutzername | `admin` |
-| Passwort | `Admin123!` |
-
----
-
-## 🏗️ Projektstruktur
-
-```
-SmartCamPro/
-├── backend/           # FastAPI Python Server
-├── frontend/          # React Dashboard
-├── android-app/       # Android Kotlin App
-├── Server-starten.bat # Windows Server-Skript
-├── server-starten.sh  # Linux/Mac Server-Skript
-├── INSTALLATION_DE.md # Deutsche Anleitung
-└── README.md          # Diese Datei
+npm run dev
 ```
 
----
-
-## ⚠️ Häufige Probleme
-
-### "Server nicht erreichbar"
-- ✅ Server auf PC gestartet?
-- ✅ PC und Tablet im selben WLAN?
-- ✅ Richtige IP-Adresse eingegeben?
-- ✅ Firewall erlaubt Port 8000?
-
-### "Falscher Benutzername oder Passwort"
-- Benutzername: `admin` (klein geschrieben!)
-- Passwort: `Admin123!` (großes A, Ausrufezeichen!)
-
-### "Unbekannte App installieren"
-- Einstellungen → Sicherheit → Unbekannte Apps
-- Browser/Dateimanager erlauben
+### Features:
+- Dashboard mit Live-Kamera-Views
+- Bewegungserkennung mit KI
+- Alarm-System mit Benachrichtigungen
+- Videoaufnahmen und Speicherung
+- Benutzerverwaltung mit Rollen
+- Dark Theme Design
 
 ---
 
-## 📋 Checkliste
+## Technische Details:
 
-- [ ] Python auf PC installiert
-- [ ] Server gestartet (Terminal offen!)
-- [ ] PC-IP-Adresse gemerkt
-- [ ] APK auf Tablet installiert
-- [ ] Server-URL in App eingegeben
-- [ ] Login mit admin / Admin123!
-- [ ] Kamera funktioniert
+### Streaming-Protokoll:
+- **MJPEG über HTTP** (Port 8080)
+- Kompatibel mit jedem Browser (Safari, Chrome, Firefox)
+- Keine spezielle App auf dem Zuschauer-Gerät nötig
 
----
+### Sicherheit:
+- Nur im lokalen WLAN erreichbar
+- Kein Internet-Zugang erforderlich
+- Verschlüsselte Passwörter (bcrypt)
+- JWT Token-Authentifizierung
 
-*SmartCam Pro v1.2 – Professionelles Sicherheitssystem*
+### Kompatibilität:
+- Android 7.0+ (Tablet als Kamera)
+- Jedes Gerät mit Browser (iPhone, Android, PC als Zuschauer)
