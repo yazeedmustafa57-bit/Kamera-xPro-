@@ -38,39 +38,15 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".ui.MainActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.SmartCamPro" />
+        <activity android:name=".ui.HomeActivity" android:screenOrientation="portrait" android:theme="@style/Theme.SmartCamPro" />
+        <activity android:name=".ui.CameraActivity" android:screenOrientation="portrait" android:theme="@style/Theme.SmartCamPro" />
+        <activity android:name=".ui.ViewerActivity" android:screenOrientation="portrait" android:theme="@style/Theme.SmartCamPro" />
+        <activity android:name=".ui.LiveViewActivity" android:screenOrientation="portrait" android:theme="@style/Theme.SmartCamPro" />
+        <activity android:name=".ui.GalleryActivity" android:screenOrientation="portrait" android:theme="@style/Theme.SmartCamPro" />
+        <activity android:name=".ui.EventsActivity" android:screenOrientation="portrait" android:theme="@style/Theme.SmartCamPro" />
+        <activity android:name=".ui.SettingsActivity" android:screenOrientation="portrait" android:theme="@style/Theme.SmartCamPro" />
 
-        <activity
-            android:name=".ui.CameraActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.SmartCamPro" />
-
-        <activity
-            android:name=".ui.GalleryActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.SmartCamPro" />
-
-        <activity
-            android:name=".ui.EventsActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.SmartCamPro" />
-
-        <activity
-            android:name=".ui.SettingsActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.SmartCamPro" />
-
-        <service
-            android:name=".services.StreamingService"
-            android:foregroundServiceType="camera"
-            android:exported="false" />
-
-        <service
-            android:name=".services.WebRTCStreamingService"
-            android:foregroundServiceType="camera|microphone"
-            android:exported="false" />
+        <service android:name=".services.StreamingService" android:foregroundServiceType="camera" android:exported="false" />
+        <service android:name=".services.WebRTCStreamingService" android:foregroundServiceType="camera|microphone" android:exported="false" />
     </application>
 </manifest>

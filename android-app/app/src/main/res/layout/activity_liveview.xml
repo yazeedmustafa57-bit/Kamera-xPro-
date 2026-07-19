@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Live Image -->
+    <ImageView
+        android:id="@+id/liveImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        android:background="#000000" />
+
+    <!-- Loading -->
+    <LinearLayout
+        android:id="@+id/loadingView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <ProgressBar
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:indeterminateTint="#3b82f6" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Verbinde mit Kamera..."
+            android:textColor="#ffffff"
+            android:textSize="14sp"
+            android:layout_marginTop="12dp" />
+    </LinearLayout>
+
+    <!-- Top Status Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="#80000000"
+        android:gravity="center_vertical">
+
+        <Button
+            android:id="@+id/backButton"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:text="←"
+            android:textColor="#ffffff"
+            android:backgroundTint="#475569"
+            android:textSize="14sp"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:id="@+id/cameraNameText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Kamera"
+            android:textColor="#ffffff"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <View
+            android:id="@+id/liveDot"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="#22c55e"
+            android:layout_marginEnd="6dp" />
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Live"
+            android:textColor="#22c55e"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Bottom Controls -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:paddingBottom="24dp"
+        android:background="#80000000"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/screenshotBtn"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:text="📸 Screenshot"
+            android:textColor="#ffffff"
+            android:backgroundTint="#3b82f6"
+            android:textSize="12sp"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/alarmBtn"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:text="🚨 Alarm"
+            android:textColor="#ffffff"
+            android:backgroundTint="#ef4444"
+            android:textSize="12sp"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/fullscreenBtn"
+        android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:text="⛶ Vollbild"
+            android:textColor="#ffffff"
+            android:backgroundTint="#64748b"
+            android:textSize="12sp" />
+    </LinearLayout>
+</FrameLayout>

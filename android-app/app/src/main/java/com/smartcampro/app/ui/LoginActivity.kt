@@ -1,7 +1,9 @@
 package com.smartcampro.app.ui
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
+import android.view.Gravity
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.smartcampro.app.R
@@ -13,8 +15,7 @@ import org.json.JSONObject
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var userManager: UserManager
-    private var isCloudMode = true
-    private var cloudApiUrl = "https://smartcampro-api.onrender.com"
+    private lateinit var apiClient: ApiClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,11 +26,13 @@ class LoginActivity : AppCompatActivity() {
         }
 
         if (userManager.isLoggedIn()) {
-            startMainActivity()
+            startHome()
             return
         }
 
         setContentView(R.layout.activity_login)
+        val prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
+        apiClient = ApiClient(prefs.getString("cloud_server", "") ?: "")
 
         val loginUsername = findViewById<EditText>(R.id.loginUsername)
         val loginPassword = findViewById<EditText>(R.id.loginPassword)
@@ -42,7 +45,7 @@ class LoginActivity : AppCompatActivity() {
             val password = loginPassword.text.toString()
 
             if (username.isEmpty() || password.isEmpty()) {
-                loginError.text = "Benutzername und Passwort eingeben"
+                loginError.text = "Bitte ausfuellen"
                 return@setOnClickListener
             }
 
@@ -50,73 +53,58 @@ class LoginActivity : AppCompatActivity() {
             loginButton.text = "Anmelden..."
             loginError.text = ""
 
-            // Versuche Cloud-Login zuerst
-            val cloudApi = ApiClient(cloudApiUrl)
-            cloudApi.login(username, password, object : ApiClient.ApiCallback {
+            // Cloud-Login
+            apiClient.login(username, password, object : ApiClient.ApiCallback {
                 override fun onSuccess(response: String) {
                     try {
                         val json = JSONObject(response)
                         val token = json.getString("access_token")
                         val user = json.getJSONObject("user")
 
-                        getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE).edit().apply {
+                        prefs.edit().apply {
                             putString(Constants.PREF_AUTH_TOKEN, token)
                             putString(Constants.PREF_LOGGED_IN_USER, user.getString("username"))
-                            putString(Constants.PREF_USER_SUBSCRIPTION, user.getString("subscription"))
                             putBoolean(Constants.PREF_CLOUD_MODE, true)
-                            putString(Constants.PREF_SERVER_URL, cloudApiUrl)
                             apply()
                         }
 
                         userManager.setLoggedInUser(user.getString("username"))
-                        runOnUiThread {
-                            Toast.makeText(this@LoginActivity, "Cloud-Anmeldung erfolgreich!", Toast.LENGTH_SHORT).show()
-                            startMainActivity()
-                        }
+                        runOnUiThread { startHome() }
                     } catch (e: Exception) {
                         runOnUiThread {
-                            loginError.text = "Cloud-Anmeldung fehlgeschlagen"
+                            loginError.text = "Anmeldung fehlgeschlagen"
                             loginButton.isEnabled = true
-                            loginButton.text = "☁️ Mit Cloud anmelden"
+                            loginButton.text = "Anmelden"
                         }
                     }
                 }
 
                 override fun onError(error: String) {
-                    runOnUiThread {
-                        loginError.text = "Cloud nicht erreichbar. Lokale Anmeldung..."
-                        loginButton.isEnabled = true
-                        loginButton.text = "☁️ Mit Cloud anmelden"
+                    // Fallback: lokal
+                    if (userManager.validateUser(username, password)) {
+                        userManager.setLoggedInUser(username)
+                        prefs.edit().putBoolean(Constants.PREF_CLOUD_MODE, false).apply()
+                        runOnUiThread { startHome() }
+                    } else {
+                        runOnUiThread {
+                            loginError.text = "Falsches Passwort"
+                            loginButton.isEnabled = true
+                            loginButton.text = "Anmelden"
+                        }
                     }
-                    // Fallback: lokale Anmeldung
-                    localLogin(username, password)
                 }
             })
         }
 
         skipLoginButton.setOnClickListener {
             userManager.setLoggedInUser("admin")
-            getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE).edit().apply {
-                putBoolean(Constants.PREF_CLOUD_MODE, false)
-                apply()
-            }
-            startMainActivity()
+            prefs.edit().putBoolean(Constants.PREF_CLOUD_MODE, false).apply()
+            startHome()
         }
     }
 
-    private fun localLogin(username: String, password: String) {
-        if (userManager.validateUser(username, password)) {
-            userManager.setLoggedInUser(username)
-            getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE).edit().apply {
-                putBoolean(Constants.PREF_CLOUD_MODE, false)
-                apply()
-            }
-            startMainActivity()
-        }
-    }
-
-    private fun startMainActivity() {
-        startActivity(Intent(this, MainActivity::class.java))
+    private fun startHome() {
+        startActivity(Intent(this, HomeActivity::class.java))
         finish()
     }
 }

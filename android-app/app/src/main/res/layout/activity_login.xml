@@ -5,13 +5,23 @@
     android:orientation="vertical"
     android:background="#0f172a"
     android:gravity="center"
-    android:padding="32dp">
+    android:padding="24dp">
 
-    <ImageView
-        android:layout_width="72dp"
-        android:layout_height="72dp"
-        android:src="@drawable/ic_launcher"
-        android:layout_marginBottom="16dp" />
+    <!-- Logo -->
+    <LinearLayout
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#1e293b"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📹"
+            android:textSize="36sp" />
+    </LinearLayout>
 
     <TextView
         android:layout_width="wrap_content"
@@ -25,20 +35,21 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Anmeldung"
-        android:textColor="#94a3b8"
-        android:textSize="14sp"
+        android:text="Sicherheit fuer Zuhause"
+        android:textColor="#64748b"
+        android:textSize="13sp"
         android:layout_marginBottom="32dp" />
 
     <EditText
         android:id="@+id/loginUsername"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:hint="Benutzername"
+        android:hint="E-Mail oder Benutzername"
         android:textColor="#ffffff"
-        android:textColorHint="#64748b"
+        android:textColorHint="#475569"
         android:background="#1e293b"
         android:paddingHorizontal="16dp"
+        android:textSize="15sp"
         android:layout_marginBottom="12dp" />
 
     <EditText
@@ -48,19 +59,22 @@
         android:hint="Passwort"
         android:inputType="textPassword"
         android:textColor="#ffffff"
-        android:textColorHint="#64748b"
+        android:textColorHint="#475569"
         android:background="#1e293b"
         android:paddingHorizontal="16dp"
+        android:textSize="15sp"
         android:layout_marginBottom="24dp" />
 
     <Button
         android:id="@+id/loginButton"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="52dp"
         android:text="Anmelden"
         android:textColor="#ffffff"
         android:backgroundTint="#3b82f6"
-        android:textSize="16sp" />
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp" />
 
     <TextView
         android:id="@+id/loginError"
@@ -69,15 +83,14 @@
         android:text=""
         android:textColor="#ef4444"
         android:textSize="13sp"
-        android:layout_marginTop="12dp" />
+        android:layout_marginBottom="12dp" />
 
-    <Button
-        android:id="@+id/skipLoginButton"
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Überspringen"
-        android:textColor="#94a3b8"
-        android:backgroundTint="#00000000"
+        android:text="App testen (ohne Anmeldung)"
+        android:textColor="#64748b"
         android:textSize="13sp"
-        android:layout_marginTop="16dp" />
+        android:padding="8dp"
+        android:id="@+id/skipLoginButton" />
 </LinearLayout>
