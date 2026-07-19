@@ -5,7 +5,6 @@ import android.util.Log
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
-import java.io.PrintWriter
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.net.ServerSocket
@@ -26,6 +25,11 @@ class LocalStreamingServer(
     private var motionCount: Int = 0
     private var isRunning = false
     private var clientCount = 0
+
+    // Notifications
+    private val notifications = mutableListOf<Map<String, String>>()
+    private val maxNotifications = 20
+    private var latestNotification: String? = null
 
     private val clients = ConcurrentLinkedQueue<Socket>()
     private val executor = Executors.newFixedThreadPool(10)
@@ -85,6 +89,21 @@ class LocalStreamingServer(
         }
     }
 
+    fun addNotification(message: String, type: String = "motion") {
+        val notification = mapOf(
+            "message" to message,
+            "type" to type,
+            "timestamp" to System.currentTimeMillis().toString()
+        )
+        synchronized(notifications) {
+            notifications.add(0, notification)
+            if (notifications.size > maxNotifications) {
+                notifications.removeAt(notifications.size - 1)
+            }
+            latestNotification = message
+        }
+    }
+
     fun updateStatus(battery: Int, wifi: Int, name: String, motions: Int) {
         batteryLevel = battery
         wifiSignal = wifi
@@ -124,12 +143,14 @@ class LocalStreamingServer(
             when {
                 request.startsWith("GET /stream") -> handleStreamClient(socket, output)
                 request.startsWith("GET /status") -> handleStatus(output)
-                request.startsWith("GET / ") || request.startsWith("GET /HTTP") -> handleViewerPage(output)
+                request.startsWith("GET /notifications") -> handleNotifications(output)
+                request.startsWith("GET /events") -> handleEvents(output)
                 request.startsWith("GET /favicon") -> {
                     socket.close()
                     clients.remove(socket)
                     clientCount = clients.size
                 }
+                request.startsWith("GET / ") || request.startsWith("GET /HTTP") -> handleViewerPage(output)
                 else -> handleViewerPage(output)
             }
         } catch (e: Exception) {
@@ -143,18 +164,16 @@ class LocalStreamingServer(
 
     private fun readRequest(input: InputStream): String {
         val sb = StringBuilder()
-        var c: Int
         var lastChar = ' '
         var lineCount = 0
         while (lineCount < 50) {
-            c = input.read()
+            val c = input.read()
             if (c == -1) break
             sb.append(c.toChar())
             val ch = c.toChar()
             if (ch == '\n' && lastChar == '\r') {
                 lineCount++
-                val current = sb.toString()
-                if (current.endsWith("\r\n\r\n") || current.endsWith("\n\n")) break
+                if (sb.endsWith("\r\n\r\n") || sb.endsWith("\n\n")) break
             }
             lastChar = ch
         }
@@ -170,8 +189,6 @@ class LocalStreamingServer(
                 "\r\n"
         output.write(header.toByteArray())
         output.flush()
-
-        Log.d("LocalServer", "MJPEG client connected")
 
         while (isRunning && !socket.isClosed) {
             val frame = latestFrame
@@ -191,19 +208,53 @@ class LocalStreamingServer(
             }
             try { Thread.sleep(33) } catch (_: InterruptedException) { break }
         }
-        Log.d("LocalServer", "MJPEG client disconnected")
     }
 
     private fun handleStatus(output: OutputStream) {
-        val json = "{\"status\":\"online\",\"battery\":$batteryLevel,\"wifi\":$wifiSignal," +
-                "\"camera\":\"$cameraName\",\"motions\":$motionCount,\"clients\":$clientCount}"
+        val latest = latestNotification ?: ""
+        val json = "{" +
+                "\"status\":\"online\"," +
+                "\"battery\":$batteryLevel," +
+                "\"wifi\":$wifiSignal," +
+                "\"camera\":\"$cameraName\"," +
+                "\"motions\":$motionCount," +
+                "\"clients\":$clientCount," +
+                "\"notification\":\"$latest\"" +
+                "}"
+        sendJsonResponse(output, json)
+    }
+
+    private fun handleNotifications(output: OutputStream) {
+        val sb = StringBuilder()
+        sb.append("[")
+        synchronized(notifications) {
+            for (i in notifications.indices) {
+                val n = notifications[i]
+                if (i > 0) sb.append(",")
+                sb.append("{")
+                sb.append("\"message\":\"${n["message"]}\",")
+                sb.append("\"type\":\"${n["type"]}\",")
+                sb.append("\"timestamp\":\"${n["timestamp"]}\"")
+                sb.append("}")
+            }
+        }
+        sb.append("]")
+        sendJsonResponse(output, sb.toString())
+    }
+
+    private fun handleEvents(output: OutputStream) {
+        handleNotifications(output)
+    }
+
+    private fun sendJsonResponse(output: OutputStream, json: String) {
+        val bytes = json.toByteArray()
         val header = "HTTP/1.1 200 OK\r\n" +
                 "Content-Type: application/json\r\n" +
                 "Access-Control-Allow-Origin: *\r\n" +
-                "Content-Length: ${json.toByteArray().size}\r\n" +
+                "Content-Length: ${bytes.size}\r\n" +
                 "\r\n"
         output.write(header.toByteArray())
-        output.write(json.toByteArray())
+        output.write(bytes)
         output.flush()
     }
 
@@ -248,15 +299,11 @@ class LocalStreamingServer(
             left: 0;
             right: 0;
             z-index: 10;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.85), transparent);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
             padding: 12px 16px;
             padding-top: calc(12px + env(safe-area-inset-top, 0px));
         }
-        .title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
+        .title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
         .status-bar {
             display: flex;
             gap: 12px;
@@ -274,26 +321,15 @@ class LocalStreamingServer(
         .live-dot.live { background: #22c55e; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         .camera-view {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
             background: #000;
         }
-        #stream {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
+        #stream { width: 100%; height: 100%; object-fit: contain; }
         .connecting {
             position: absolute;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            color: #64748b;
-            font-size: 14px;
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            color: #64748b; font-size: 14px;
         }
         .spinner {
             width: 32px; height: 32px;
@@ -305,44 +341,109 @@ class LocalStreamingServer(
         @keyframes spin { to { transform: rotate(360deg); } }
         .controls {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            bottom: 0; left: 0; right: 0;
             z-index: 10;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
             padding: 16px;
             padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
             display: flex;
             justify-content: center;
-            gap: 16px;
+            gap: 12px;
         }
         .btn {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            border: none;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 48px; height: 48px;
+            border-radius: 50%; border: none;
+            font-size: 20px;
+            display: flex; align-items: center; justify-content: center;
             cursor: pointer;
         }
         .btn-screenshot { background: #3b82f6; color: #fff; }
         .btn-fullscreen { background: #64748b; color: #fff; }
+        .btn-alarm { background: #ef4444; color: #fff; }
         .screenshot-flash {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: #fff;
-            opacity: 0;
-            pointer-events: none;
-            z-index: 100;
+            background: #fff; opacity: 0;
+            pointer-events: none; z-index: 100;
             transition: opacity 0.1s;
         }
         .screenshot-flash.active { opacity: 0.8; }
+
+        /* Notification toast */
+        .toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ef4444;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            text-align: center;
+            max-width: 90vw;
+        }
+        .toast.show { opacity: 1; }
+
+        /* Notifications panel */
+        .notifications-panel {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #CC000000;
+            z-index: 30;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .notifications-panel.open { display: flex; }
+        .notif-header {
+            font-size: 18px; font-weight: 600;
+            margin-bottom: 12px; text-align: center;
+        }
+        .notif-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 60px;
+        }
+        .notif-item {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            border-left: 3px solid #ef4444;
+        }
+        .notif-item.motion { border-left-color: #f59e0b; }
+        .notif-item .msg { font-size: 14px; color: #fff; }
+        .notif-item .time { font-size: 11px; color: #64748b; margin-top: 4px; }
+        .notif-close {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #475569;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 30px;
+            font-size: 14px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <div class="screenshot-flash" id="flash"></div>
+    <div class="toast" id="toast"></div>
+
+    <div class="notifications-panel" id="notifPanel">
+        <div class="notif-header">🔔 Benachrichtigungen</div>
+        <div class="notif-list" id="notifList"></div>
+        <button class="notif-close" onclick="closeNotifications()">Schließen</button>
+    </div>
 
     <div class="header">
         <div class="title">📹 SmartCam Pro - Live</div>
@@ -368,6 +469,7 @@ class LocalStreamingServer(
     <div class="controls">
         <button class="btn btn-screenshot" onclick="takeScreenshot()" title="Screenshot">📷</button>
         <button class="btn btn-fullscreen" onclick="toggleFullscreen()" title="Vollbild">⛶</button>
+        <button class="btn btn-alarm" onclick="showNotifications()" title="Benachrichtigungen">🔔</button>
     </div>
 
     <script>
@@ -375,6 +477,8 @@ class LocalStreamingServer(
         const connecting = document.getElementById('connecting');
         const flash = document.getElementById('flash');
         const liveDot = document.getElementById('liveDot');
+        const toast = document.getElementById('toast');
+        let lastNotification = '';
 
         stream.onload = function() {
             connecting.style.display = 'none';
@@ -389,6 +493,7 @@ class LocalStreamingServer(
             setTimeout(() => { stream.src = '/stream?' + Date.now(); }, 2000);
         };
 
+        // Status polling
         setInterval(async () => {
             try {
                 const resp = await fetch('/status');
@@ -399,11 +504,32 @@ class LocalStreamingServer(
                 document.getElementById('statusText').textContent = 'Live';
                 liveDot.classList.add('live');
                 connecting.style.display = 'none';
+
+                // Show notification toast
+                if (data.notification && data.notification !== lastNotification) {
+                    lastNotification = data.notification;
+                    showToast('🚨 ' + data.notification);
+                    // Request notification permission
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        new Notification('SmartCam Pro', { body: data.notification, icon: '📹' });
+                    }
+                }
             } catch (e) {
                 document.getElementById('statusText').textContent = 'Verbinde...';
                 liveDot.classList.remove('live');
             }
         }, 2000);
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 4000);
+        }
+
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
 
         function takeScreenshot() {
             const canvas = document.createElement('canvas');
@@ -424,6 +550,34 @@ class LocalStreamingServer(
             } else {
                 document.exitFullscreen();
             }
+        }
+
+        async function showNotifications() {
+            document.getElementById('notifPanel').classList.add('open');
+            const list = document.getElementById('notifList');
+            list.innerHTML = '<div style="color:#64748b;text-align:center;padding:20px">Lade...</div>';
+            try {
+                const resp = await fetch('/notifications');
+                const data = await resp.json();
+                if (data.length === 0) {
+                    list.innerHTML = '<div style="color:#64748b;text-align:center;padding:20px">Keine Benachrichtigungen</div>';
+                } else {
+                    list.innerHTML = data.map(n => {
+                        const d = new Date(parseInt(n.timestamp));
+                        const time = d.toLocaleTimeString('de-DE');
+                        const cls = n.type === 'motion' ? ' motion' : '';
+                        return '<div class="notif-item' + cls + '">' +
+                               '<div class="msg">' + n.message + '</div>' +
+                               '<div class="time">' + time + '</div></div>';
+                    }).join('');
+                }
+            } catch (e) {
+                list.innerHTML = '<div style="color:#ef4444;text-align:center;padding:20px">Fehler beim Laden</div>';
+            }
+        }
+
+        function closeNotifications() {
+            document.getElementById('notifPanel').classList.remove('open');
         }
 
         let wakeLock = null;

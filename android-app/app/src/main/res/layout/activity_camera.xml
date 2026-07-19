@@ -9,6 +9,45 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Recording indicator -->
+    <LinearLayout
+        android:id="@+id/recordingIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="70dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#CCFF0000"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp"
+        android:visibility="gone">
+
+        <View
+            android:id="@+id/recordingDot"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="@android:color/white"
+            android:layout_marginEnd="6dp" />
+
+        <TextView
+            android:id="@+id/recordingTimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="● REC 00:00"
+            android:textColor="#ffffff"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Alarm overlay -->
+    <View
+        android:id="@+id/alarmFlashOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#66FF0000"
+        android:visibility="gone" />
+
     <!-- Top overlay -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -46,7 +85,7 @@
             android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- QR Code Overlay (hidden by default) -->
+    <!-- QR Code Overlay -->
     <LinearLayout
         android:id="@+id/qrOverlay"
         android:layout_width="match_parent"
@@ -108,68 +147,414 @@
             android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- Bottom controls -->
+    <!-- Settings Overlay -->
+    <LinearLayout
+        android:id="@+id/settingsOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#DD111827"
+        android:padding="24dp"
+        android:visibility="gone">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⚙️ Einstellungen"
+                    android:textColor="#ffffff"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="24dp" />
+
+                <!-- LED / Taschenlampe -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🔦 Taschenlampe"
+                    android:textColor="#f59e0b"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="EIN/AUS"
+                        android:textColor="#ffffff"
+                        android:textSize="13sp" />
+
+                    <Switch
+                        android:id="@+id/flashToggle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Automatisch bei Bewegung"
+                        android:textColor="#ffffff"
+                        android:textSize="13sp" />
+
+                    <Switch
+                        android:id="@+id/autoFlashToggle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Nur nachts aktiv (18-06 Uhr)"
+                        android:textColor="#ffffff"
+                        android:textSize="13sp" />
+
+                    <Switch
+                        android:id="@+id/nightOnlyToggle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+                </LinearLayout>
+
+                <!-- Alarm -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🚨 Alarm"
+                    android:textColor="#ef4444"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Sirene bei Bewegung"
+                        android:textColor="#ffffff"
+                        android:textSize="13sp" />
+
+                    <Switch
+                        android:id="@+id/alarmToggle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Blinkende LED"
+                        android:textColor="#ffffff"
+                        android:textSize="13sp" />
+
+                    <Switch
+                        android:id="@+id/alarmBlinkToggle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Vibration"
+                        android:textColor="#ffffff"
+                        android:textSize="13sp" />
+
+                    <Switch
+                        android:id="@+id/vibrationToggle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Lautstärke"
+                        android:textColor="#ffffff"
+                        android:textSize="13sp" />
+
+                    <SeekBar
+                        android:id="@+id/volumeSeekBar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:max="100"
+                        android:progress="70" />
+                </LinearLayout>
+
+                <!-- Aufnahme -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🎬 Aufnahme"
+                    android:textColor="#22c55e"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Auto-Aufnahme bei Bewegung"
+                        android:textColor="#ffffff"
+                        android:textSize="13sp" />
+
+                    <Switch
+                        android:id="@+id/autoRecordToggle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Bewegungs-Speicher (Sek)"
+                        android:textColor="#ffffff"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/motionRecordDuration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="10"
+                        android:textColor="#f59e0b"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="8dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Bewegungsempfindlichkeit"
+                        android:textColor="#ffffff"
+                        android:textSize="13sp" />
+
+                    <SeekBar
+                        android:id="@+id/sensitivitySeekBar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:max="100"
+                        android:progress="50" />
+                </LinearLayout>
+
+                <!-- Close button -->
+                <Button
+                    android:id="@+id/closeSettingsButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="Schließen"
+                    android:textColor="#ffffff"
+                    android:backgroundTint="#475569"
+                    android:layout_marginTop="8dp" />
+
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+
+    <!-- Bottom controls - Row 1 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:orientation="horizontal"
-        android:padding="12dp"
+        android:padding="8dp"
+        android:paddingBottom="4dp"
         android:background="#80000000"
         android:gravity="center">
 
         <Button
             android:id="@+id/switchCameraButton"
             android:layout_width="0dp"
-            android:layout_height="44dp"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:text="📷"
             android:textColor="#ffffff"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:backgroundTint="#475569"
-            android:layout_marginEnd="4dp" />
+            android:layout_marginEnd="3dp" />
 
         <Button
             android:id="@+id/screenshotButton"
             android:layout_width="0dp"
-            android:layout_height="44dp"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:text="📸"
             android:textColor="#ffffff"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:backgroundTint="#06b6d4"
-            android:layout_marginEnd="4dp" />
+            android:layout_marginEnd="3dp" />
 
         <Button
             android:id="@+id/recordButton"
             android:layout_width="0dp"
-            android:layout_height="44dp"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:text="🔴"
             android:textColor="#ffffff"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:backgroundTint="#f59e0b"
-            android:layout_marginEnd="4dp" />
+            android:layout_marginEnd="3dp" />
+
+        <Button
+            android:id="@+id/flashButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="🔦"
+            android:textColor="#ffffff"
+            android:textSize="14sp"
+            android:backgroundTint="#475569"
+            android:layout_marginEnd="3dp" />
+
+        <Button
+            android:id="@+id/alarmButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="🚨"
+            android:textColor="#ffffff"
+            android:textSize="14sp"
+            android:backgroundTint="#475569" />
+    </LinearLayout>
+
+    <!-- Bottom controls - Row 2 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="56dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:paddingBottom="4dp"
+        android:background="#80000000"
+        android:gravity="center">
 
         <Button
             android:id="@+id/qrButton"
             android:layout_width="0dp"
-            android:layout_height="44dp"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:text="📱"
             android:textColor="#ffffff"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:backgroundTint="#8b5cf6"
-            android:layout_marginEnd="4dp" />
+            android:layout_marginEnd="3dp" />
+
+        <Button
+            android:id="@+id/settingsButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="⚙️"
+            android:textColor="#ffffff"
+            android:textSize="14sp"
+            android:backgroundTint="#64748b"
+            android:layout_marginEnd="3dp" />
 
         <Button
             android:id="@+id/stopButton"
             android:layout_width="0dp"
-            android:layout_height="44dp"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:text="⏹"
             android:textColor="#ffffff"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:backgroundTint="#ef4444" />
     </LinearLayout>
 </FrameLayout>

@@ -4,10 +4,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
-import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.YuvImage
-import android.media.Image
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager as Camera2Manager
 import android.util.Base64
 import android.util.Log
 import androidx.camera.core.*
@@ -29,8 +29,55 @@ class CameraManager(private val context: Context) {
     private var frameCallback: ((Bitmap) -> Unit)? = null
     private var lensFacing = CameraSelector.LENS_FACING_BACK
 
+    // Torch / LED
+    private var isTorchOn = false
+    var torchListener: ((Boolean) -> Unit)? = null
+
     fun setFrameCallback(callback: (Bitmap) -> Unit) {
         this.frameCallback = callback
+    }
+
+    fun isTorchEnabled(): Boolean = isTorchOn
+
+    fun toggleTorch() {
+        isTorchOn = !isTorchOn
+        try {
+            camera?.cameraInfo?.let { info ->
+                val hasFlash = info.torchState?.value != null
+                if (hasFlash) {
+                    camera?.cameraControl?.enableTorch(isTorchOn)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("CameraManager", "Torch toggle failed", e)
+            isTorchOn = !isTorchOn
+        }
+        torchListener?.invoke(isTorchOn)
+    }
+
+    fun setTorch(on: Boolean) {
+        if (isTorchOn == on) return
+        isTorchOn = on
+        try {
+            camera?.cameraControl?.enableTorch(isTorchOn)
+        } catch (e: Exception) {
+            Log.e("CameraManager", "Torch set failed", e)
+            isTorchOn = !on
+        }
+        torchListener?.invoke(isTorchOn)
+    }
+
+    fun flashTorch(times: Int = 3, intervalMs: Long = 200) {
+        Thread {
+            for (i in 0 until times) {
+                setTorch(true)
+                try { Thread.sleep(intervalMs) } catch (_: InterruptedException) { break }
+                setTorch(false)
+                if (i < times - 1) {
+                    try { Thread.sleep(intervalMs) } catch (_: InterruptedException) { break }
+                }
+            }
+        }.start()
     }
 
     fun switchCamera() {
@@ -38,6 +85,10 @@ class CameraManager(private val context: Context) {
             CameraSelector.LENS_FACING_FRONT
         } else {
             CameraSelector.LENS_FACING_BACK
+        }
+        // Torch bei Frontkamera ausschalten
+        if (lensFacing == CameraSelector.LENS_FACING_FRONT && isTorchOn) {
+            setTorch(false)
         }
     }
 
@@ -164,6 +215,11 @@ class CameraManager(private val context: Context) {
     }
 
     fun stopCamera() {
+        // Torch aus bei Stop
+        if (isTorchOn) {
+            try { camera?.cameraControl?.enableTorch(false) } catch (_: Exception) {}
+            isTorchOn = false
+        }
         cameraProvider?.unbindAll()
         camera = null
     }
