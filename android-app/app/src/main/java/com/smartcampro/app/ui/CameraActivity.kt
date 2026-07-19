@@ -2,7 +2,6 @@ package com.smartcampro.app.ui
 
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.os.BatteryManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.*
@@ -34,11 +33,14 @@ class CameraActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
         ts = TokenStorage(this)
-        val prefs = getSharedPreferences("smartcam_prefs", MODE_PRIVATE)
-        val serverUrl = prefs.getString("server_url", "") ?: ""
+        val serverUrl = ts.getServerUrl() ?: ""
         val token = ts.getAccessToken() ?: ""
-        if (serverUrl.isEmpty() || token.isEmpty()) { Toast.makeText(this, "Kein Server", Toast.LENGTH_SHORT).show(); finish(); return }
+        if (serverUrl.isEmpty() || token.isEmpty()) {
+            Toast.makeText(this, "Kein Server oder nicht eingeloggt", Toast.LENGTH_SHORT).show()
+            finish(); return
+        }
 
+        RetrofitClient.setBaseUrl(serverUrl)
         registerCamera(serverUrl, token)
         findViewById<Button>(R.id.switchCameraButton).setOnClickListener { switchCamera() }
         findViewById<Button>(R.id.flashButton).setOnClickListener { toggleFlash() }
@@ -53,7 +55,9 @@ class CameraActivity : AppCompatActivity() {
             override fun onResponse(call: Call<CameraResponse>, response: Response<CameraResponse>) {
                 if (response.isSuccessful) { cameraId = response.body()!!.id; connectSocket(serverUrl, token) }
             }
-            override fun onFailure(call: Call<CameraResponse>, t: Throwable) {}
+            override fun onFailure(call: Call<CameraResponse>, t: Throwable) {
+                runOnUiThread { Toast.makeText(this@CameraActivity, "Kamera-Registrierung fehlgeschlagen: ${t.message}", Toast.LENGTH_SHORT).show() }
+            }
         })
     }
 
@@ -62,12 +66,12 @@ class CameraActivity : AppCompatActivity() {
             val options = IO.Options.builder().setAuth(mapOf("token" to token)).build()
             socket = IO.socket(serverUrl, options)
             socket?.on(Socket.EVENT_CONNECT) {
-                runOnUiThread { findViewById<TextView>(R.id.statusText).text = "● Live"; findViewById<TextView>(R.id.statusText).setTextColor(Color.parseColor("#22c55e")) }
+                runOnUiThread { findViewById<TextView>(R.id.statusText).text = "Live"; findViewById<TextView>(R.id.statusText).setTextColor(Color.parseColor("#22c55e")) }
                 socket?.emit("camera:join", cameraId)
             }
-            socket?.on("watcher:joined") { runOnUiThread { viewerCount++; findViewById<TextView>(R.id.viewersText).text = "👁 $viewerCount" } }
-            socket?.on("watcher:left") { runOnUiThread { viewerCount = (viewerCount - 1).coerceAtLeast(0); findViewById<TextView>(R.id.viewersText).text = "👁 $viewerCount" } }
-            socket?.on(Socket.EVENT_DISCONNECT) { runOnUiThread { findViewById<TextView>(R.id.statusText).text = "● Getrennt"; findViewById<TextView>(R.id.statusText).setTextColor(Color.parseColor("#ef4444")) } }
+            socket?.on("watcher:joined") { runOnUiThread { viewerCount++; findViewById<TextView>(R.id.viewersText).text = "Zuschauer: $viewerCount" } }
+            socket?.on("watcher:left") { runOnUiThread { viewerCount = (viewerCount - 1).coerceAtLeast(0); findViewById<TextView>(R.id.viewersText).text = "Zuschauer: $viewerCount" } }
+            socket?.on(Socket.EVENT_DISCONNECT) { runOnUiThread { findViewById<TextView>(R.id.statusText).text = "Getrennt"; findViewById<TextView>(R.id.statusText).setTextColor(Color.parseColor("#ef4444")) } }
             socket?.connect()
         } catch (e: Exception) { Log.e("Camera", "Socket error", e) }
     }
@@ -84,7 +88,7 @@ class CameraActivity : AppCompatActivity() {
 
     private fun switchCamera() {}
     private fun toggleFlash() { try { camera?.cameraControl?.enableTorch(!(camera?.cameraInfo?.torchState?.value == 1)) } catch (_: Exception) {} }
-    private fun triggerAlarm() { Toast.makeText(this, "🚨 ALARM!", Toast.LENGTH_SHORT).show(); socket?.emit("camera:motion", JSONObject().apply { put("cameraId", cameraId); put("type", "alarm_triggered") }) }
+    private fun triggerAlarm() { Toast.makeText(this, "Alarm gesendet!", Toast.LENGTH_SHORT).show(); socket?.emit("camera:motion", JSONObject().apply { put("cameraId", cameraId); put("type", "alarm_triggered") }) }
     private fun showPairingCode() {
         val token = ts.getAccessToken() ?: return
         RetrofitClient.getApi().getCamera("Bearer $token", cameraId).enqueue(object : Callback<CameraResponse> {

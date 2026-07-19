@@ -25,12 +25,11 @@ class LiveViewActivity : AppCompatActivity() {
         findViewById<Button>(R.id.backButton).setOnClickListener { finish() }
         findViewById<Button>(R.id.alarmBtn).setOnClickListener {
             socket?.emit("camera:motion", JSONObject().apply { put("cameraId", cameraId); put("type", "alarm_triggered") })
-            Toast.makeText(this, "🚨 Alarm gesendet!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Alarm gesendet!", Toast.LENGTH_SHORT).show()
         }
         findViewById<Button>(R.id.screenshotBtn).setOnClickListener { Toast.makeText(this, "Screenshot gespeichert", Toast.LENGTH_SHORT).show() }
 
-        val prefs = getSharedPreferences("smartcam_prefs", MODE_PRIVATE)
-        val serverUrl = prefs.getString("server_url", "") ?: ""
+        val serverUrl = ts.getServerUrl() ?: ""
         val token = ts.getAccessToken() ?: ""
         if (serverUrl.isEmpty()) { finish(); return }
 

@@ -20,8 +20,14 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
         ts = TokenStorage(this)
-        serverStatusText = findViewById(R.id.serverStatusText)
 
+        // Always set base URL from stored value
+        val savedUrl = ts.getServerUrl()
+        if (!savedUrl.isNullOrEmpty()) {
+            RetrofitClient.setBaseUrl(savedUrl)
+        }
+
+        serverStatusText = findViewById(R.id.serverStatusText)
         updateServerStatus()
 
         val displayName = ts.getDisplayName() ?: ts.getUserEmail() ?: "Gast"
@@ -46,10 +52,10 @@ class HomeActivity : AppCompatActivity() {
     private fun updateServerStatus() {
         val url = ts.getServerUrl()
         if (url.isNullOrEmpty()) {
-            serverStatusText.text = "⚠️ Kein Server konfiguriert — Server-URL eingeben!"
+            serverStatusText.text = "Kein Server konfiguriert"
             serverStatusText.setTextColor(getColor(android.R.color.holo_orange_light))
         } else {
-            serverStatusText.text = "✅ Server: $url"
+            serverStatusText.text = "Server: $url"
             serverStatusText.setTextColor(getColor(android.R.color.holo_green_light))
         }
     }
@@ -65,13 +71,13 @@ class HomeActivity : AppCompatActivity() {
 
     private fun showServerDialog(callback: (() -> Unit)? = null) {
         val input = EditText(this).apply {
-            hint = "https://smartcampro.onrender.com"
+            hint = "https://raw-obligation-hose-simply.trycloudflare.com"
             setText(ts.getServerUrl() ?: "")
             setPadding(48, 32, 48, 32)
         }
         AlertDialog.Builder(this)
             .setTitle("Server-URL eingeben")
-            .setMessage("Backend-Server URL.\n\nBeispiel: https://smartcampro.onrender.com\nOder lokaler Server: http://192.168.1.100:3000")
+            .setMessage("Backend-Server URL eingeben.\n\nCloudflare Tunnel oder lokaler Server.")
             .setView(input)
             .setPositiveButton("Speichern") { _, _ ->
                 val url = input.text.toString().trim()
@@ -90,12 +96,10 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun startCamera() {
-        RetrofitClient.setBaseUrl(ts.getServerUrl() ?: "")
         startActivity(Intent(this, CameraActivity::class.java))
     }
 
     private fun startViewer() {
-        RetrofitClient.setBaseUrl(ts.getServerUrl() ?: "")
         startActivity(Intent(this, ViewerActivity::class.java))
     }
 }

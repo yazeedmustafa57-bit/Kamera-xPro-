@@ -38,13 +38,13 @@ class ViewerActivity : AppCompatActivity() {
                     runOnUiThread {
                         if (cams.isEmpty()) { emptyState.visibility = View.VISIBLE; cameraList.visibility = View.GONE; return@runOnUiThread }
                         emptyState.visibility = View.GONE; cameraList.visibility = View.VISIBLE
-                        findViewById<TextView>(R.id.connectionStatus).text = "🟢 ${cams.size} Kamera(s)"
+                        findViewById<TextView>(R.id.connectionStatus).text = "${cams.size} Kamera(s) gefunden"
                         cameraList.removeAllViews()
                         cams.forEach { cam -> cameraList.addView(createCard(cam)) }
                     }
                 }
             }
-            override fun onFailure(call: Call<List<CameraResponse>>, t: Throwable) { runOnUiThread { findViewById<TextView>(R.id.connectionStatus).text = "🔴 Offline" } }
+            override fun onFailure(call: Call<List<CameraResponse>>, t: Throwable) { runOnUiThread { findViewById<TextView>(R.id.connectionStatus).text = "Offline - Server nicht erreichbar" } }
         })
     }
 
