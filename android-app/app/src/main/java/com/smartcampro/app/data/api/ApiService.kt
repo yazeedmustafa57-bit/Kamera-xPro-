@@ -8,7 +8,7 @@ data class LoginRequest(val email: String, val password: String)
 data class AuthResponse(val user: UserResponse, val accessToken: String, val refreshToken: String)
 data class UserResponse(val id: String, val email: String, @SerializedName("display_name") val displayName: String?, @SerializedName("subscription_tier") val subscriptionTier: String?)
 data class CameraCreate(val name: String, @SerializedName("device_model") val deviceModel: String? = "Android")
-data class CameraResponse(val id: String, @SerializedName("owner_id") val ownerId: String, val name: String, val status: String?, @SerializedName("pairing_code") val pairingCode: String?, @SerializedName("created_at") val createdAt: String?)
+data class CameraResponse(val id: String, @SerializedName("owner_id") val ownerId: String, val name: String, val status: String?, @SerializedName("pairing_code") val pairingCode: String?, @SerializedName("device_model") val deviceModel: String? = null, @SerializedName("created_at") val createdAt: String?)
 
 interface ApiService {
     @POST("api/auth/register") fun register(@Body request: RegisterRequest): Call<AuthResponse>

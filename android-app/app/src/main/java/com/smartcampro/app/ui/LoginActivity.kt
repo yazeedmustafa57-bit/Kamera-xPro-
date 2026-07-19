@@ -37,7 +37,7 @@ class LoginActivity : AppCompatActivity() {
         val errorText = findViewById<TextView>(R.id.errorText)
 
         // Pre-fill server URL
-        serverUrlInput.setText(savedUrl ?: "https://raw-obligation-hose-simply.trycloudflare.com")
+        serverUrlInput.setText(savedUrl ?: "https://staffing-hundred-tree-try.trycloudflare.com")
 
         findViewById<Button>(R.id.tabLogin).setOnClickListener {
             isRegisterMode = false

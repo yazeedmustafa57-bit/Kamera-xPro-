@@ -23,6 +23,7 @@ function setupSignaling(io) {
         socket.cameraId = cameraId;
         db.updateCamera(cameraId, { status: 'online' });
         io.to(`watchers:${cameraId}`).emit('camera:status', { cameraId, status: 'online' });
+        console.log(`Camera ${cameraId} joined`);
       }
     });
 
@@ -32,7 +33,14 @@ function setupSignaling(io) {
         socket.join(`watchers:${cameraId}`);
         socket.watchingCameraId = cameraId;
         io.to(`camera:${cameraId}`).emit('watcher:joined', { watcherId: socket.id });
+        console.log(`Watcher ${socket.id} joined camera ${cameraId}`);
       }
+    });
+
+    socket.on('watcher:leave', (cameraId) => {
+      socket.leave(`watchers:${cameraId}`);
+      io.to(`camera:${cameraId}`).emit('watcher:left', { watcherId: socket.id });
+      console.log(`Watcher ${socket.id} left camera ${cameraId}`);
     });
 
     socket.on('camera:motion', (data) => {
@@ -41,6 +49,17 @@ function setupSignaling(io) {
       if (cam && cam.owner_id === socket.userId) {
         db.addEvent({ id: require('uuid').v4(), camera_id: cameraId, type: type || 'motion', created_at: Date.now() });
         io.to(`watchers:${cameraId}`).emit('camera:motion', { cameraId, type, timestamp: Date.now() });
+        console.log(`Motion on ${cameraId}: ${type}`);
+      }
+    });
+
+    socket.on('camera:alarm', (data) => {
+      const { cameraId, message } = data;
+      const cam = db.findCameraById(cameraId);
+      if (cam && cam.owner_id === socket.userId) {
+        db.addEvent({ id: require('uuid').v4(), camera_id: cameraId, type: 'alarm', created_at: Date.now() });
+        io.to(`watchers:${cameraId}`).emit('camera:alarm', { cameraId, message: message || 'Alarm ausgeloest!', timestamp: Date.now() });
+        console.log(`Alarm on ${cameraId}`);
       }
     });
 
@@ -48,8 +67,12 @@ function setupSignaling(io) {
       if (socket.cameraId) {
         db.updateCamera(socket.cameraId, { status: 'offline' });
         io.to(`watchers:${socket.cameraId}`).emit('camera:status', { cameraId: socket.cameraId, status: 'offline' });
+        console.log(`Camera ${socket.cameraId} disconnected`);
       }
-      console.log(`Disconnected: ${socket.userId}`);
+      if (socket.watchingCameraId) {
+        io.to(`camera:${socket.watchingCameraId}`).emit('watcher:left', { watcherId: socket.id });
+        console.log(`Watcher ${socket.id} disconnected from camera ${socket.watchingCameraId}`);
+      }
     });
   });
 }
