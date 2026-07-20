@@ -43,13 +43,45 @@ function setupSignaling(io) {
       console.log(`Watcher ${socket.id} left camera ${cameraId}`);
     });
 
+    // VIDEO FRAMES - forward from camera to all watchers
+    socket.on('camera:frame', (data) => {
+      if (data && data.cameraId && data.frame) {
+        io.to(`watchers:${data.cameraId}`).emit('camera:frame', {
+          cameraId: data.cameraId,
+          frame: data.frame
+        });
+      }
+    });
+
+    // AUDIO - forward from camera to all watchers
+    socket.on('camera:audio', (data) => {
+      if (data && data.cameraId && data.audio) {
+        io.to(`watchers:${data.cameraId}`).emit('camera:audio', {
+          cameraId: data.cameraId,
+          audio: data.audio
+        });
+      }
+    });
+
+    // Remote commands from watcher to camera
+    socket.on('camera:switch', (data) => {
+      if (data && data.cameraId) {
+        io.to(`camera:${data.cameraId}`).emit('remote:switch', { from: socket.id });
+      }
+    });
+
+    socket.on('camera:flash', (data) => {
+      if (data && data.cameraId) {
+        io.to(`camera:${data.cameraId}`).emit('remote:flash', { on: data.on, from: socket.id });
+      }
+    });
+
     socket.on('camera:motion', (data) => {
       const { cameraId, type } = data;
       const cam = db.findCameraById(cameraId);
       if (cam && cam.owner_id === socket.userId) {
         db.addEvent({ id: require('uuid').v4(), camera_id: cameraId, type: type || 'motion', created_at: Date.now() });
         io.to(`watchers:${cameraId}`).emit('camera:motion', { cameraId, type, timestamp: Date.now() });
-        console.log(`Motion on ${cameraId}: ${type}`);
       }
     });
 
@@ -58,8 +90,17 @@ function setupSignaling(io) {
       const cam = db.findCameraById(cameraId);
       if (cam && cam.owner_id === socket.userId) {
         db.addEvent({ id: require('uuid').v4(), camera_id: cameraId, type: 'alarm', created_at: Date.now() });
-        io.to(`watchers:${cameraId}`).emit('camera:alarm', { cameraId, message: message || 'Alarm ausgeloest!', timestamp: Date.now() });
+        io.to(`watchers:${cameraId}`).emit('camera:alarm', { cameraId, message: message || 'Alarm!', timestamp: Date.now() });
         console.log(`Alarm on ${cameraId}`);
+      }
+    });
+
+    socket.on('camera:battery', (data) => {
+      if (data && data.cameraId) {
+        io.to(`watchers:${data.cameraId}`).emit('camera:battery', {
+          cameraId: data.cameraId,
+          level: data.level
+        });
       }
     });
 
@@ -67,11 +108,9 @@ function setupSignaling(io) {
       if (socket.cameraId) {
         db.updateCamera(socket.cameraId, { status: 'offline' });
         io.to(`watchers:${socket.cameraId}`).emit('camera:status', { cameraId: socket.cameraId, status: 'offline' });
-        console.log(`Camera ${socket.cameraId} disconnected`);
       }
       if (socket.watchingCameraId) {
         io.to(`camera:${socket.watchingCameraId}`).emit('watcher:left', { watcherId: socket.id });
-        console.log(`Watcher ${socket.id} disconnected from camera ${socket.watchingCameraId}`);
       }
     });
   });

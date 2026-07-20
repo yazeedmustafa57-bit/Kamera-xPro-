@@ -71,7 +71,7 @@ class HomeActivity : AppCompatActivity() {
 
     private fun showServerDialog(callback: (() -> Unit)? = null) {
         val input = EditText(this).apply {
-            hint = "https://ddr-toner-reno-holmes.trycloudflare.com"
+            hint = "https://stronger-moves-could-discipline.trycloudflare.com"
             setText(ts.getServerUrl() ?: "")
             setPadding(48, 32, 48, 32)
         }

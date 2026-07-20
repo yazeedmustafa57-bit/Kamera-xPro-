@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#000000">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical" android:padding="32dp">
+    <ImageView android:id="@+id/videoFrame" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:visibility="gone" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical" android:padding="32dp" android:id="@+id/placeholderLayout">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📹" android:textSize="64sp" android:layout_marginBottom="16dp" />
         <TextView android:id="@+id/cameraNameText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#ffffff" android:textSize="22sp" android:textStyle="bold" android:layout_marginBottom="12dp" />
-        <TextView android:id="@+id/statusText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Verbinde..." android:textColor="#f59e0b" android:textSize="16sp" android:textStyle="bold" android:layout_marginBottom="24dp" />
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Warte auf Kamera-Status..." android:textColor="#64748b" android:textSize="14sp" />
+        <TextView android:id="@+id/statusText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Verbinde..." android:textColor="#f59e0b" android:textSize="16sp" android:textStyle="bold" />
     </LinearLayout>
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="bottom" android:orientation="horizontal" android:padding="12dp" android:background="#CC000000" android:gravity="center">
         <Button android:id="@+id/backButton" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="Zurueck" android:textColor="#ffffff" android:background="@drawable/bg_button_dark" android:textSize="13sp" android:textAllCaps="false" android:layout_marginEnd="6dp" />

@@ -9,367 +9,369 @@
 <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;color:#fff;min-height:100vh;overflow-x:hidden}
-.screen{display:none;padding:20px;min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0a0a0a;color:#fff;min-height:100vh;overflow-x:hidden;-webkit-user-select:none;user-select:none}
+.screen{display:none;min-height:100vh}
 .screen.active{display:flex;flex-direction:column}
 
-/* Login */
-.login-screen{justify-content:center;align-items:center}
-.logo{font-size:64px;margin-bottom:16px}
+/* LOGIN */
+.login-screen{justify-content:center;align-items:center;padding:24px}
+.logo{font-size:72px;margin-bottom:12px}
 .app-title{font-size:28px;font-weight:bold;margin-bottom:4px}
 .app-sub{font-size:14px;color:#64748b;margin-bottom:32px}
-.input{width:100%;max-width:360px;padding:14px 16px;background:#1e293b;border:1px solid #334155;border-radius:12px;color:#fff;font-size:16px;margin-bottom:12px;outline:none}
+.input{width:100%;max-width:380px;padding:16px;background:#1a1a2e;border:1px solid #333;border-radius:14px;color:#fff;font-size:16px;margin-bottom:12px;outline:none;-webkit-appearance:none}
 .input:focus{border-color:#6366f1}
-.btn{width:100%;max-width:360px;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer;margin-bottom:12px}
+.btn{width:100%;max-width:380px;padding:16px;border:none;border-radius:14px;font-size:17px;font-weight:600;cursor:pointer;margin-bottom:12px;transition:all 0.2s}
+.btn:active{opacity:0.7;transform:scale(0.97)}
 .btn-primary{background:#6366f1;color:#fff}
 .btn-green{background:#22c55e;color:#fff}
 .btn-red{background:#ef4444;color:#fff}
-.btn-dark{background:#1e293b;color:#94a3b8;border:1px solid #334155}
-.btn:active{opacity:0.8;transform:scale(0.98)}
+.btn-dark{background:#1a1a2e;color:#94a3b8;border:1px solid #333}
 .error{color:#ef4444;font-size:13px;text-align:center;margin-top:8px}
-.tab-row{display:flex;gap:8px;width:100%;max-width:360px;margin-bottom:16px}
+.tab-row{display:flex;gap:10px;width:100%;max-width:380px;margin-bottom:16px}
+.tab-row .btn{margin-bottom:0}
 
-/* Home */
-.home-screen .header{background:#1e293b;padding:16px;border-radius:12px;margin-bottom:16px}
-.home-screen .header h2{font-size:18px;margin-bottom:4px}
-.home-screen .header p{font-size:12px;color:#64748b}
-.card{background:#1e293b;border-radius:12px;padding:20px;margin-bottom:12px}
-.card h3{font-size:16px;margin-bottom:8px}
-.card p{font-size:13px;color:#94a3b8}
+/* HOME */
+.home-header{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:20px;display:flex;align-items:center;gap:12px}
+.home-header h1{font-size:20px;flex:1}
+.cam-card{background:#1a1a2e;border-radius:16px;padding:16px;margin:8px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all 0.2s}
+.cam-card:active{transform:scale(0.98);background:#222}
+.dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.dot-on{background:#22c55e;box-shadow:0 0 8px #22c55e}
+.dot-off{background:#555}
+.cam-info{flex:1}
+.cam-name{font-size:16px;font-weight:600}
+.cam-stat{font-size:13px;margin-top:2px}
+.section-title{font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:1px;padding:16px 16px 4px;font-weight:600}
 
-/* Cameras */
-.camera-card{background:#1e293b;border-radius:12px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
-.status-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
-.status-online{background:#22c55e}
-.status-offline{background:#64748b}
-.camera-info{flex:1}
-.camera-name{font-size:16px;font-weight:bold}
-.camera-status{font-size:13px}
-.camera-actions{display:flex;gap:8px}
-.btn-sm{padding:8px 16px;border:none;border-radius:8px;font-size:13px;font-weight:bold;cursor:pointer}
-.btn-sm:active{opacity:0.8}
+/* LIVE VIEW */
+.live-topbar{background:rgba(0,0,0,0.8);padding:12px 16px;display:flex;align-items:center;gap:12px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);position:fixed;top:0;left:0;right:0;z-index:10}
+.live-back{background:none;border:none;color:#fff;font-size:24px;cursor:pointer;padding:4px 8px}
+.live-title{flex:1;font-size:16px;font-weight:600}
+.live-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
+.badge-live{background:#166534;color:#22c55e}
+.badge-off{background:#333;color:#888}
+.badge-alarm{background:#7f1d1d;color:#ef4444;animation:blink 0.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
 
-/* Live View */
-.live-header{text-align:center;padding:20px 0}
-.live-icon{font-size:64px;margin-bottom:12px}
-.live-name{font-size:22px;font-weight:bold;margin-bottom:8px}
-.live-status{font-size:16px;font-weight:bold;padding:8px 20px;border-radius:20px;display:inline-block}
-.live-status.online{background:#166534;color:#22c55e}
-.live-status.offline{background:#1e293b;color:#64748b}
-.live-status.alarm{background:#7f1d1d;color:#ef4444;animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-.live-actions{display:flex;gap:12px;margin-top:24px;justify-content:center;flex-wrap:wrap}
-.event-list{margin-top:24px;width:100%}
-.event-item{background:#1e293b;border-radius:8px;padding:12px;margin-bottom:8px;font-size:13px}
-.event-time{color:#64748b;font-size:11px}
-.event-type{color:#f59e0b;font-weight:bold}
-.event-alarm{color:#ef4444;font-weight:bold}
+.video-container{flex:1;display:flex;align-items:center;justify-content:center;background:#000;margin-top:50px;position:relative;overflow:hidden}
+.video-container img{width:100%;height:auto;max-height:calc(100vh - 180px);object-fit:contain}
+.video-placeholder{text-align:center;padding:40px}
+.video-placeholder .icon{font-size:80px;margin-bottom:12px}
+.video-placeholder p{color:#64748b;font-size:14px}
 
-/* QR Scanner placeholder */
-.qr-section{text-align:center;margin-top:20px;padding:20px;background:#1e293b;border-radius:12px}
-.qr-section p{color:#94a3b8;font-size:14px;margin-top:8px}
+/* CONTROLS */
+.controls-bar{background:rgba(0,0,0,0.9);padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center;flex-wrap:wrap;position:fixed;bottom:0;left:0;right:0;z-index:10;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.ctrl-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;border:none;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;min-width:64px;transition:all 0.2s;color:#fff}
+.ctrl-btn:active{transform:scale(0.9)}
+.ctrl-btn .icon{font-size:22px}
+.ctrl-btn.dark{background:#1a1a2e}
+.ctrl-btn.green{background:#166534}
+.ctrl-btn.red{background:#7f1d1d}
+.ctrl-btn.purple{background:#4c1d95}
+.ctrl-btn.active{background:#22c55e;color:#000}
+.ctrl-btn.alarm-active{background:#ef4444;animation:blink 0.5s infinite}
 
-/* Toast */
-.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none;border:1px solid #334155}
-.toast.show{opacity:1}
+.battery-badge{position:fixed;top:56px;right:16px;background:rgba(0,0,0,0.7);padding:4px 10px;border-radius:8px;font-size:11px;color:#94a3b8;z-index:11}
+.event-popup{position:fixed;top:60px;left:16px;right:16px;background:#7f1d1d;border-radius:12px;padding:14px;z-index:20;display:none;animation:slideDown 0.3s}
+.event-popup.show{display:block}
+@keyframes slideDown{from{transform:translateY(-20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.event-popup h3{font-size:15px;margin-bottom:4px}
+.event-popup p{font-size:12px;color:#fca5a5}
 </style>
 </head>
 <body>
 
-<!-- Login Screen -->
+<!-- LOGIN -->
 <div id="loginScreen" class="screen login-screen active">
   <div class="logo">📹</div>
   <div class="app-title">SmartCam Pro</div>
   <div class="app-sub">Sicherheits-Kamera System</div>
-  
-  <input id="loginEmail" class="input" type="email" placeholder="E-Mail" autocomplete="email">
-  <input id="loginPass" class="input" type="password" placeholder="Passwort" autocomplete="current-password">
-  <input id="loginName" class="input" type="text" placeholder="Anzeigename (nur bei Registrierung)" style="display:none">
-  
+  <input id="email" class="input" type="email" placeholder="E-Mail" autocomplete="email">
+  <input id="pass" class="input" type="password" placeholder="Passwort" autocomplete="current-password">
+  <input id="name" class="input" type="text" placeholder="Anzeigename" style="display:none">
   <div class="tab-row">
-    <button class="btn btn-primary" onclick="login()" id="loginBtn">Anmelden</button>
-    <button class="btn btn-dark" onclick="toggleRegister()" id="regBtn">Registrieren</button>
+    <button class="btn btn-primary" onclick="doLogin()" id="loginBtn">Anmelden</button>
+    <button class="btn btn-dark" onclick="toggleReg()">Registrieren</button>
   </div>
-  <div id="loginError" class="error"></div>
+  <div id="loginErr" class="error"></div>
 </div>
 
-<!-- Home Screen -->
+<!-- HOME -->
 <div id="homeScreen" class="screen">
-  <div class="header">
-    <h2>SmartCam Pro</h2>
-    <p id="homeUser"></p>
+  <div class="home-header">
+    <div style="font-size:28px">📹</div>
+    <h1>SmartCam Pro</h1>
+    <button class="btn btn-dark" onclick="logout()" style="width:auto;padding:8px 16px;font-size:13px;margin:0">Abmelden</button>
   </div>
-  
-  <div class="card" onclick="showCameras()">
-    <h3>📷 Kameras</h3>
-    <p id="cameraCount">Lade Kameras...</p>
-  </div>
-  
-  <div class="card">
-    <h3>📊 Status</h3>
-    <p id="serverStatus">Verbunden</p>
-  </div>
-  
-  <button class="btn btn-dark" onclick="logout()" style="margin-top:20px">Abmelden</button>
-</div>
-
-<!-- Cameras Screen -->
-<div id="camerasScreen" class="screen">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-    <button class="btn-sm btn-dark" onclick="showHome()" style="padding:10px 14px">←</button>
-    <h2 style="font-size:20px">Meine Kameras</h2>
-  </div>
-  <div id="cameraList"></div>
-  <div id="emptyCameras" style="display:none;text-align:center;padding:40px 0">
-    <div style="font-size:48px;margin-bottom:16px">📷</div>
-    <p style="font-size:16px;font-weight:bold;margin-bottom:8px">Keine Kameras</p>
+  <div class="section-title">Kameras</div>
+  <div id="camList"></div>
+  <div id="emptyState" style="display:none;text-align:center;padding:60px 20px">
+    <div style="font-size:64px;margin-bottom:16px">📷</div>
+    <p style="font-size:16px;font-weight:600;margin-bottom:8px">Keine Kameras</p>
     <p style="font-size:14px;color:#64748b">Starte eine Kamera auf einem Android-Gerät</p>
   </div>
 </div>
 
-<!-- Live View Screen -->
+<!-- LIVE VIEW -->
 <div id="liveScreen" class="screen">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-    <button class="btn-sm btn-dark" onclick="leaveLive()" style="padding:10px 14px">←</button>
-    <h2 style="font-size:20px" id="liveTitle">Live</h2>
+  <div class="live-topbar">
+    <button class="live-back" onclick="leaveLive()">←</button>
+    <div class="live-title" id="liveTitle">Kamera</div>
+    <div class="live-badge badge-off" id="liveBadge">Verbinde...</div>
   </div>
-  <div class="live-header">
-    <div class="live-icon">📹</div>
-    <div class="live-name" id="liveName">Kamera</div>
-    <div id="liveStatusBadge" class="live-status offline">Verbinde...</div>
+  <div class="battery-badge" id="batteryBadge">🔋 --</div>
+  <div class="event-popup" id="eventPopup">
+    <h3 id="eventTitle">🚨 ALARM</h3>
+    <p id="eventMsg">Bewegung erkannt!</p>
   </div>
-  <div class="live-actions">
-    <button class="btn-sm btn-red" onclick="sendAlarm()" style="padding:12px 24px;font-size:15px">🚨 ALARM</button>
+  <div class="video-container" id="videoContainer">
+    <div class="video-placeholder" id="videoPlaceholder">
+      <div class="icon">📹</div>
+      <p>Warte auf Live-Stream...</p>
+      <p style="margin-top:8px;font-size:12px;color:#444">Kamera muss online sein</p>
+    </div>
+    <img id="liveFrame" style="display:none" alt="Live">
   </div>
-  <div class="event-list" id="eventList"></div>
+  <div class="controls-bar">
+    <button class="ctrl-btn purple" onclick="showQR()">
+      <span class="icon">📱</span>QR
+    </button>
+    <button class="ctrl-btn dark" id="btnFlash" onclick="toggleFlash()">
+      <span class="icon">🔦</span>Licht
+    </button>
+    <button class="ctrl-btn dark" id="btnSwitch" onclick="switchCam()">
+      <span class="icon">🔄</span>Drehen
+    </button>
+    <button class="ctrl-btn dark" id="btnAudio" onclick="toggleAudio()">
+      <span class="icon">🔊</span>Hören
+    </button>
+    <button class="ctrl-btn red" onclick="sendAlarm()">
+      <span class="icon">🚨</span>Alarm
+    </button>
+  </div>
 </div>
 
-<!-- Toast -->
-<div id="toast" class="toast"></div>
-
 <script>
-const API = window.location.origin;
-let token = localStorage.getItem('sc_token') || '';
-let refreshToken = localStorage.getItem('sc_refresh') || '';
-let userId = localStorage.getItem('sc_user_id') || '';
-let userName = localStorage.getItem('sc_user_name') || '';
-let isRegister = false;
+const API = location.origin;
+let token = localStorage.getItem('sc_t');
+let userId = localStorage.getItem('sc_uid');
+let userName = localStorage.getItem('sc_un');
+let isReg = false;
 let socket = null;
-let currentCameraId = '';
+let currentCamId = '';
 let cameras = [];
+let flashOn = false;
+let audioOn = false;
+let audioCtx = null;
 
-// Init
-if (token && userId) {
-  showScreen('homeScreen');
-  document.getElementById('homeUser').textContent = 'Eingeloggt: ' + userName;
-  loadCameras();
+if (token && userId) { showHome(); }
+
+function $(id) { return document.getElementById(id); }
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); $(id).classList.add('active'); }
+
+function toggleReg() {
+  isReg = !isReg;
+  $('name').style.display = isReg ? 'block' : 'none';
+  $('loginBtn').textContent = isReg ? 'Registrieren' : 'Anmelden';
+  $('loginErr').textContent = '';
 }
 
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-
-function toggleRegister() {
-  isRegister = !isRegister;
-  document.getElementById('loginName').style.display = isRegister ? 'block' : 'none';
-  document.getElementById('loginBtn').textContent = isRegister ? 'Registrieren' : 'Anmelden';
-  document.getElementById('loginError').textContent = '';
-}
-
-async function login() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPass').value;
-  const name = document.getElementById('loginName').value.trim();
-  const err = document.getElementById('loginError');
-  
-  if (!email || !pass) { err.text = 'Bitte alles ausfüllen'; return; }
-  
+async function doLogin() {
+  const email = $('email').value.trim();
+  const pass = $('pass').value;
+  const name = $('name').value.trim();
+  if (!email || !pass) { $('loginErr').textContent = 'Alles ausfüllen'; return; }
   try {
-    const url = isRegister ? '/api/auth/register' : '/api/auth/login';
-    const body = isRegister ? {email, password: pass, display_name: name || null} : {email, password: pass};
-    
-    const res = await fetch(API + url, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body)
-    });
+    const url = isReg ? '/api/auth/register' : '/api/auth/login';
+    const body = isReg ? { email, password: pass, display_name: name || null } : { email, password: pass };
+    const res = await fetch(API + url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json();
-    
-    if (!res.ok) { err.textContent = data.error || 'Fehler'; return; }
-    
+    if (!res.ok) { $('loginErr').textContent = data.error || 'Fehler'; return; }
     token = data.accessToken;
-    refreshToken = data.refreshToken;
     userId = data.user.id;
     userName = data.user.displayName || data.user.display_name || email.split('@')[0];
-    
-    localStorage.setItem('sc_token', token);
-    localStorage.setItem('sc_refresh', refreshToken);
-    localStorage.setItem('sc_user_id', userId);
-    localStorage.setItem('sc_user_name', userName);
-    
-    document.getElementById('homeUser').textContent = 'Eingeloggt: ' + userName;
-    showScreen('homeScreen');
-    loadCameras();
-  } catch(e) {
-    err.textContent = 'Server nicht erreichbar';
-  }
+    localStorage.setItem('sc_t', token);
+    localStorage.setItem('sc_uid', userId);
+    localStorage.setItem('sc_un', userName);
+    showHome();
+  } catch (e) { $('loginErr').textContent = 'Server nicht erreichbar'; }
 }
 
 function logout() {
-  token = ''; refreshToken = ''; userId = '';
+  token = userId = userName = '';
   localStorage.clear();
   if (socket) socket.disconnect();
   showScreen('loginScreen');
 }
 
-function showHome() { showScreen('homeScreen'); loadCameras(); }
-function showCameras() { showScreen('camerasScreen'); loadCameras(); }
-
-async function loadCameras() {
-  try {
-    const res = await fetch(API + '/api/cameras/', {
-      headers: {'Authorization': 'Bearer ' + token}
-    });
-    if (res.status === 401) { logout(); return; }
-    cameras = await res.json();
-    
-    const list = document.getElementById('cameraList');
-    const empty = document.getElementById('emptyCameras');
-    const count = document.getElementById('cameraCount');
-    
-    const online = cameras.filter(c => c.status === 'online').length;
-    count.textContent = online + '/' + cameras.length + ' online';
-    
-    if (cameras.length === 0) {
-      list.innerHTML = '';
-      empty.style.display = 'block';
-      return;
-    }
-    
-    empty.style.display = 'none';
-    list.innerHTML = cameras.map(c => `
-      <div class="camera-card">
-        <div class="status-dot ${c.status === 'online' ? 'status-online' : 'status-offline'}"></div>
-        <div class="camera-info">
-          <div class="camera-name">${esc(c.name)}</div>
-          <div class="camera-status" style="color:${c.status === 'online' ? '#22c55e' : '#64748b'}">
-            ${c.status === 'online' ? '● Live' : '● Offline'}
-          </div>
-        </div>
-        ${c.status === 'online' ? `<button class="btn-sm btn-green" onclick="joinLive('${c.id}','${esc(c.name)}')">Live</button>` : ''}
-      </div>
-    `).join('');
-  } catch(e) {
-    document.getElementById('cameraCount').textContent = 'Fehler beim Laden';
-  }
-}
-
-function joinLive(cameraId, cameraName) {
-  currentCameraId = cameraId;
-  document.getElementById('liveTitle').textContent = cameraName;
-  document.getElementById('liveName').textContent = cameraName;
-  document.getElementById('liveStatusBadge').className = 'live-status offline';
-  document.getElementById('liveStatusBadge').textContent = 'Verbinde...';
-  document.getElementById('eventList').innerHTML = '';
-  showScreen('liveScreen');
-  connectSocket(cameraId);
-}
-
-function connectSocket(cameraId) {
-  if (socket) { socket.disconnect(); socket = null; }
-  
-  socket = io(API, {
-    auth: { token: token },
-    reconnection: true,
-    reconnectionAttempts: 10,
-    reconnectionDelay: 2000
-  });
-  
-  socket.on('connect', () => {
-    document.getElementById('liveStatusBadge').className = 'live-status online';
-    document.getElementById('liveStatusBadge').textContent = '● Verbunden';
-    socket.emit('watcher:join', cameraId);
-  });
-  
-  socket.on('camera:status', (data) => {
-    const badge = document.getElementById('liveStatusBadge');
-    if (data.status === 'online') {
-      badge.className = 'live-status online';
-      badge.textContent = '● Live';
-    } else {
-      badge.className = 'live-status offline';
-      badge.textContent = '● Offline';
-    }
-  });
-  
-  socket.on('camera:alarm', (data) => {
-    const badge = document.getElementById('liveStatusBadge');
-    badge.className = 'live-status alarm';
-    badge.textContent = '🚨 ALARM!';
-    addEvent('🚨 ALARM', data.message || 'Alarm ausgelöst!', data.timestamp);
-    showToast('🚨 ALARM empfangen!');
-    
-    // Play alarm sound
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 800;
-      osc.type = 'square';
-      gain.gain.value = 0.3;
-      osc.start();
-      setTimeout(() => { osc.stop(); ctx.close(); }, 2000);
-    } catch(e) {}
-    
-    // Vibrate if supported
-    if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
-  });
-  
-  socket.on('camera:motion', (data) => {
-    addEvent('👁 Bewegung', data.type || 'Bewegung erkannt', data.timestamp);
-    showToast('Bewegung erkannt: ' + (data.type || ''));
-  });
-  
-  socket.on('disconnect', () => {
-    document.getElementById('liveStatusBadge').className = 'live-status offline';
-    document.getElementById('liveStatusBadge').textContent = '● Getrennt';
-  });
-}
-
-function sendAlarm() {
-  if (!socket || !currentCameraId) return;
-  socket.emit('camera:alarm', { cameraId: currentCameraId, message: 'Alarm vom Zuschauer!' });
-  showToast('🚨 Alarm an Kamera gesendet!');
-}
-
-function leaveLive() {
-  if (socket) { socket.emit('watcher:leave', currentCameraId); socket.disconnect(); socket = null; }
-  currentCameraId = '';
-  showScreen('camerasScreen');
+function showHome() {
+  showScreen('homeScreen');
   loadCameras();
 }
 
-function addEvent(type, message, timestamp) {
-  const time = new Date(timestamp).toLocaleTimeString('de-DE');
-  const el = document.getElementById('eventList');
-  const item = document.createElement('div');
-  item.className = 'event-item';
-  item.innerHTML = `<div class="${type.includes('ALARM') ? 'event-alarm' : 'event-type'}">${type}</div><div>${esc(message)}</div><div class="event-time">${time}</div>`;
-  el.insertBefore(item, el.firstChild);
-  if (el.children.length > 20) el.removeChild(el.lastChild);
+async function loadCameras() {
+  try {
+    const res = await fetch(API + '/api/cameras/', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (res.status === 401) { logout(); return; }
+    cameras = await res.json();
+    const list = $('camList');
+    const empty = $('emptyState');
+    if (!cameras.length) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    list.innerHTML = cameras.map(c => `
+      <div class="cam-card" onclick="joinLive('${c.id}','${esc(c.name)}')">
+        <div class="dot ${c.status==='online'?'dot-on':'dot-off'}"></div>
+        <div class="cam-info">
+          <div class="cam-name">${esc(c.name)}</div>
+          <div class="cam-stat" style="color:${c.status==='online'?'#22c55e':'#64748b'}">${c.status==='online'?'● Live':'● Offline'}</div>
+        </div>
+        ${c.status==='online'?'<span style="color:#22c55e;font-size:20px">▶</span>':''}
+      </div>
+    `).join('');
+  } catch(e) {}
 }
 
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+function joinLive(camId, camName) {
+  currentCamId = camId;
+  $('liveTitle').textContent = camName;
+  $('liveBadge').className = 'live-badge badge-off';
+  $('liveBadge').textContent = 'Verbinde...';
+  $('liveFrame').style.display = 'none';
+  $('videoPlaceholder').style.display = 'block';
+  flashOn = false; audioOn = false;
+  $('btnFlash').className = 'ctrl-btn dark';
+  $('btnAudio').className = 'ctrl-btn dark';
+  showScreen('liveScreen');
+  connectSocket(camId);
+}
+
+function connectSocket(camId) {
+  if (socket) { socket.disconnect(); socket = null; }
+  socket = io(API, { auth: { token }, reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 2000 });
+
+  socket.on('connect', () => {
+    $('liveBadge').className = 'live-badge badge-live';
+    $('liveBadge').textContent = '● Live';
+    socket.emit('watcher:join', camId);
+  });
+
+  socket.on('camera:frame', (data) => {
+    if (data.frame) {
+      $('liveFrame').src = 'data:image/jpeg;base64,' + data.frame;
+      $('liveFrame').style.display = 'block';
+      $('videoPlaceholder').style.display = 'none';
+    }
+  });
+
+  socket.on('camera:audio', (data) => {
+    if (audioOn && data.audio) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const bytes = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0));
+        audioCtx.decodeAudioData(bytes.buffer).then(buf => {
+          const src = audioCtx.createBufferSource();
+          src.buffer = buf;
+          src.connect(audioCtx.destination);
+          src.start();
+        }).catch(() => {});
+      } catch(e) {}
+    }
+  });
+
+  socket.on('camera:status', (data) => {
+    const b = $('liveBadge');
+    if (data.status === 'online') { b.className = 'live-badge badge-live'; b.textContent = '● Live'; }
+    else { b.className = 'live-badge badge-off'; b.textContent = '● Offline'; $('liveFrame').style.display = 'none'; $('videoPlaceholder').style.display = 'block'; }
+  });
+
+  socket.on('camera:alarm', (data) => {
+    showEvent('🚨 ALARM!', data.message || 'Alarm ausgelöst!');
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.frequency.value = 880; osc.type = 'square'; g.gain.value = 0.3;
+      osc.start(); setTimeout(() => { osc.stop(); ctx.close(); }, 2000);
+    } catch(e) {}
+    if (navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
+    $('liveBadge').className = 'live-badge badge-alarm';
+    $('liveBadge').textContent = '🚨 ALARM!';
+  });
+
+  socket.on('camera:motion', (data) => {
+    showEvent('👁 Bewegung', data.type || 'Bewegung erkannt');
+    if (navigator.vibrate) navigator.vibrate(200);
+  });
+
+  socket.on('camera:battery', (data) => {
+    $('batteryBadge').textContent = '🔋 ' + data.level + '%';
+  });
+
+  socket.on('disconnect', () => {
+    $('liveBadge').className = 'live-badge badge-off';
+    $('liveBadge').textContent = '● Getrennt';
+  });
+}
+
+function toggleFlash() {
+  flashOn = !flashOn;
+  $('btnFlash').className = flashOn ? 'ctrl-btn green active' : 'ctrl-btn dark';
+  $('btnFlash').querySelector('.icon').textContent = flashOn ? '🔦' : '🔦';
+  if (socket && currentCamId) socket.emit('camera:flash', { cameraId: currentCamId, on: flashOn });
+}
+
+function switchCam() {
+  if (socket && currentCamId) socket.emit('camera:switch', { cameraId: currentCamId });
+}
+
+function toggleAudio() {
+  audioOn = !audioOn;
+  $('btnAudio').className = audioOn ? 'ctrl-btn green active' : 'ctrl-btn dark';
+  $('btnAudio').querySelector('.icon').textContent = audioOn ? '🔊' : '🔇';
+}
+
+function sendAlarm() {
+  if (socket && currentCamId) {
+    socket.emit('camera:alarm', { cameraId: currentCamId, message: 'Alarm vom iPhone!' });
+    showEvent('🚨 Alarm gesendet!', 'An Kamera gesendet');
+    if (navigator.vibrate) navigator.vibrate(500);
+  }
+}
+
+function showEvent(title, msg) {
+  $('eventTitle').textContent = title;
+  $('eventMsg').textContent = msg;
+  $('eventPopup').className = 'event-popup show';
+  setTimeout(() => { $('eventPopup').className = 'event-popup'; }, 5000);
+}
+
+function leaveLive() {
+  if (socket) { socket.emit('watcher:leave', currentCamId); socket.disconnect(); socket = null; }
+  currentCamId = '';
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  showHome();
+}
+
+function showQR() {
+  if (!currentCamId) return;
+  const data = JSON.stringify({ server: API, camera: currentCamId, token });
+  const url = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(data);
+  const popup = document.createElement('div');
+  popup.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px';
+  popup.innerHTML = `
+    <p style="font-size:18px;font-weight:600;margin-bottom:16px">📱 QR-Code</p>
+    <img src="${url}" style="width:260px;height:260px;border-radius:16px;background:#fff;padding:12px">
+    <p style="color:#94a3b8;margin-top:16px;font-size:14px;text-align:center">Scanne mit der Android-App</p>
+    <button onclick="this.parentElement.remove()" style="margin-top:20px;padding:12px 32px;background:#333;color:#fff;border:none;border-radius:10px;font-size:16px">Schließen</button>
+  `;
+  document.body.appendChild(popup);
 }
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Auto-refresh cameras
+setInterval(() => { if (token && document.getElementById('homeScreen').classList.contains('active')) loadCameras(); }, 5000);
 </script>
 </body>
 </html>

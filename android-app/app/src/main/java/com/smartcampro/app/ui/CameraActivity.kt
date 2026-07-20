@@ -4,9 +4,15 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.ImageFormat
+import android.graphics.Matrix
+import android.graphics.Rect
+import android.graphics.YuvImage
 import android.os.BatteryManager
 import android.os.Bundle
+import android.util.Base64
 import android.util.Log
 import android.view.Gravity
 import android.widget.*
@@ -28,6 +34,7 @@ import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -41,6 +48,7 @@ class CameraActivity : AppCompatActivity() {
     private var cameraProvider: ProcessCameraProvider? = null
     private lateinit var cameraExecutor: ExecutorService
     private var batteryLevel = 0
+    private var frameCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +59,7 @@ class CameraActivity : AppCompatActivity() {
         val serverUrl = ts.getServerUrl() ?: ""
         val token = ts.getAccessToken() ?: ""
         if (serverUrl.isEmpty() || token.isEmpty()) {
-            Toast.makeText(this, "Kein Server oder nicht eingeloggt", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Kein Server", Toast.LENGTH_SHORT).show()
             finish(); return
         }
 
@@ -75,9 +83,14 @@ class CameraActivity : AppCompatActivity() {
 
     private fun requestPermissions() {
         val perms = mutableListOf<String>()
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) perms.add(android.Manifest.permission.CAMERA)
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) perms.add(android.Manifest.permission.RECORD_AUDIO)
-        if (perms.isNotEmpty()) ActivityCompat.requestPermissions(this, perms.toTypedArray(), 100) else startCamera()
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
+            perms.add(android.Manifest.permission.CAMERA)
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
+            perms.add(android.Manifest.permission.RECORD_AUDIO)
+        if (perms.isNotEmpty())
+            ActivityCompat.requestPermissions(this, perms.toTypedArray(), 100)
+        else
+            startCamera()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
@@ -86,29 +99,22 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun loadOrCreateCamera(serverUrl: String, token: String) {
-        // First: try to load existing cameras
         RetrofitClient.getApi().listCameras("Bearer $token").enqueue(object : Callback<List<CameraResponse>> {
             override fun onResponse(call: Call<List<CameraResponse>>, response: Response<List<CameraResponse>>) {
                 if (response.isSuccessful) {
                     val cams = response.body() ?: emptyList()
                     if (cams.isNotEmpty()) {
-                        // Use first existing camera
                         cameraId = cams[0].id
-                        runOnUiThread {
-                            Toast.makeText(this@CameraActivity, "Kamera verbunden: ${cams[0].name}", Toast.LENGTH_SHORT).show()
-                        }
+                        runOnUiThread { Toast.makeText(this@CameraActivity, "Verbunden: ${cams[0].name}", Toast.LENGTH_SHORT).show() }
                         connectSocket(serverUrl, token)
                     } else {
-                        // Create new camera
                         createCamera(serverUrl, token)
                     }
                 } else {
                     createCamera(serverUrl, token)
                 }
             }
-            override fun onFailure(call: Call<List<CameraResponse>>, t: Throwable) {
-                createCamera(serverUrl, token)
-            }
+            override fun onFailure(call: Call<List<CameraResponse>>, t: Throwable) { createCamera(serverUrl, token) }
         })
     }
 
@@ -118,12 +124,10 @@ class CameraActivity : AppCompatActivity() {
                 if (response.isSuccessful) {
                     cameraId = response.body()!!.id
                     connectSocket(serverUrl, token)
-                    runOnUiThread { Toast.makeText(this@CameraActivity, "Neue Kamera erstellt!", Toast.LENGTH_SHORT).show() }
+                    runOnUiThread { Toast.makeText(this@CameraActivity, "Kamera erstellt!", Toast.LENGTH_SHORT).show() }
                 }
             }
-            override fun onFailure(call: Call<CameraResponse>, t: Throwable) {
-                runOnUiThread { Toast.makeText(this@CameraActivity, "Fehler: ${t.message}", Toast.LENGTH_SHORT).show() }
-            }
+            override fun onFailure(call: Call<CameraResponse>, t: Throwable) {}
         })
     }
 
@@ -174,22 +178,91 @@ class CameraActivity : AppCompatActivity() {
         val future = ProcessCameraProvider.getInstance(this)
         future.addListener({
             cameraProvider = future.get()
-            bindCamera()
+            bindCameraWithAnalysis()
         }, ContextCompat.getMainExecutor(this))
     }
 
-    private fun bindCamera() {
+    private fun bindCameraWithAnalysis() {
         val provider = cameraProvider ?: return
         val previewView = findViewById<PreviewView>(R.id.previewView)
-        val preview = Preview.Builder().build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
+
+        val preview = Preview.Builder().build().also {
+            it.setSurfaceProvider(previewView.surfaceProvider)
+        }
+
+        val imageAnalysis = ImageAnalysis.Builder()
+            .setTargetResolution(android.util.Size(640, 480))
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+
+        imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
+            if (viewerCount > 0 && socket?.connected() == true) {
+                sendFrame(imageProxy)
+            } else {
+                imageProxy.close()
+            }
+        }
+
         val selector = if (useFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
-        try { provider.unbindAll(); camera = provider.bindToLifecycle(this, selector, preview) }
-        catch (e: Exception) { Log.e("Camera", "Bind failed", e) }
+
+        try {
+            provider.unbindAll()
+            camera = provider.bindToLifecycle(this, selector, preview, imageAnalysis)
+        } catch (e: Exception) {
+            Log.e("Camera", "Bind failed", e)
+            // Fallback without analysis
+            try {
+                provider.unbindAll()
+                camera = provider.bindToLifecycle(this, selector, preview)
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun sendFrame(imageProxy: ImageProxy) {
+        try {
+            val buffer = imageProxy.planes[0].buffer
+            val bytes = ByteArray(buffer.remaining())
+            buffer.get(bytes)
+
+            // Convert to JPEG
+            val yuvImage = YuvImage(bytes, ImageFormat.NV21, imageProxy.width, imageProxy.height, null)
+            val out = ByteArrayOutputStream()
+            yuvImage.compressToJpeg(Rect(0, 0, imageProxy.width, imageProxy.height), 50, out)
+            val jpegBytes = out.toByteArray()
+
+            // Compress more if too large
+            val bitmap = BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size)
+            val scaled = Bitmap.createScaledBitmap(bitmap, 480, 360, true)
+            val out2 = ByteArrayOutputStream()
+            scaled.compress(Bitmap.CompressFormat.JPEG, 40, out2)
+            val finalBytes = out2.toByteArray()
+
+            val base64 = Base64.encodeToString(finalBytes, Base64.NO_WRAP)
+
+            socket?.emit("camera:frame", JSONObject().apply {
+                put("cameraId", cameraId)
+                put("frame", base64)
+            })
+
+            frameCount++
+            if (frameCount % 30 == 0) {
+                runOnUiThread {
+                    findViewById<TextView>(R.id.viewersText).text = "Zuschauer: $viewerCount | FPS: ~5"
+                }
+            }
+
+            bitmap.recycle()
+            scaled.recycle()
+        } catch (e: Exception) {
+            Log.e("Camera", "Frame error", e)
+        } finally {
+            imageProxy.close()
+        }
     }
 
     private fun switchCamera() {
         useFrontCamera = !useFrontCamera
-        bindCamera()
+        bindCameraWithAnalysis()
         Toast.makeText(this, if (useFrontCamera) "Frontkamera" else "Rueckkamera", Toast.LENGTH_SHORT).show()
     }
 
@@ -216,10 +289,7 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun showQRCode() {
-        if (cameraId.isEmpty()) {
-            Toast.makeText(this, "Kamera wird noch verbunden...", Toast.LENGTH_SHORT).show()
-            return
-        }
+        if (cameraId.isEmpty()) { Toast.makeText(this, "Kamera wird verbunden...", Toast.LENGTH_SHORT).show(); return }
         val serverUrl = ts.getServerUrl() ?: return
         val token = ts.getAccessToken() ?: return
 
@@ -232,48 +302,21 @@ class CameraActivity : AppCompatActivity() {
         val qrBitmap = generateQRCode(qrData, 600)
 
         val dialogView = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(48, 48, 48, 48)
-            setBackgroundColor(Color.parseColor("#1e293b"))
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(48, 48, 48, 48); setBackgroundColor(Color.parseColor("#1e293b"))
         }
+        dialogView.addView(TextView(this).apply { text = "QR-Code scannen"; setTextColor(Color.WHITE); textSize = 20f; setPadding(0, 0, 0, 24); gravity = Gravity.CENTER })
+        dialogView.addView(ImageView(this).apply { setImageBitmap(qrBitmap); setPadding(32, 32, 32, 32) })
+        dialogView.addView(TextView(this).apply { text = "Oeffne Zuschauer-App\nund druecke 'QR Scan'"; setTextColor(Color.parseColor("#94a3b8")); textSize = 16f; gravity = Gravity.CENTER; setPadding(0, 16, 0, 0) })
 
-        dialogView.addView(TextView(this).apply {
-            text = "📱 QR-Code scannen"
-            setTextColor(Color.WHITE)
-            textSize = 20f
-            setPadding(0, 0, 0, 24)
-            gravity = Gravity.CENTER
-        })
-
-        dialogView.addView(ImageView(this).apply {
-            setImageBitmap(qrBitmap)
-            setPadding(32, 32, 32, 32)
-        })
-
-        dialogView.addView(TextView(this).apply {
-            text = "Oeffne die Zuschauer-App\nund druecke 'QR Scan'"
-            setTextColor(Color.parseColor("#94a3b8"))
-            textSize = 16f
-            gravity = Gravity.CENTER
-            setPadding(0, 16, 0, 0)
-        })
-
-        AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setPositiveButton("Schliessen", null)
-            .show()
+        AlertDialog.Builder(this).setView(dialogView).setPositiveButton("Schliessen", null).show()
     }
 
     private fun generateQRCode(data: String, size: Int): Bitmap {
         val writer = QRCodeWriter()
         val bitMatrix = writer.encode(data, BarcodeFormat.QR_CODE, size, size)
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565)
-        for (x in 0 until size) {
-            for (y in 0 until size) {
-                bitmap.setPixel(x, y, if (bitMatrix[x, y]) Color.BLACK else Color.WHITE)
-            }
-        }
+        for (x in 0 until size) for (y in 0 until size)
+            bitmap.setPixel(x, y, if (bitMatrix[x, y]) Color.BLACK else Color.WHITE)
         return bitmap
     }
 
