@@ -33,46 +33,41 @@ function setupSignaling(io) {
         socket.join(`watchers:${cameraId}`);
         socket.watchingCameraId = cameraId;
         io.to(`camera:${cameraId}`).emit('watcher:joined', { watcherId: socket.id });
-        console.log(`Watcher ${socket.id} joined camera ${cameraId}`);
+        console.log(`Watcher ${socket.id} watching ${cameraId}`);
       }
     });
 
     socket.on('watcher:leave', (cameraId) => {
       socket.leave(`watchers:${cameraId}`);
       io.to(`camera:${cameraId}`).emit('watcher:left', { watcherId: socket.id });
-      console.log(`Watcher ${socket.id} left camera ${cameraId}`);
     });
 
-    // VIDEO FRAMES - forward from camera to all watchers
+    // VIDEO FRAMES
     socket.on('camera:frame', (data) => {
       if (data && data.cameraId && data.frame) {
-        io.to(`watchers:${data.cameraId}`).emit('camera:frame', {
-          cameraId: data.cameraId,
-          frame: data.frame
-        });
+        io.to(`watchers:${data.cameraId}`).emit('camera:frame', { cameraId: data.cameraId, frame: data.frame });
       }
     });
 
-    // AUDIO - forward from camera to all watchers
-    socket.on('camera:audio', (data) => {
-      if (data && data.cameraId && data.audio) {
-        io.to(`watchers:${data.cameraId}`).emit('camera:audio', {
-          cameraId: data.cameraId,
-          audio: data.audio
-        });
-      }
-    });
-
-    // Remote commands from watcher to camera
-    socket.on('camera:switch', (data) => {
+    // REMOTE COMMANDS from iPhone/viewer to camera
+    socket.on('remote:flash', (data) => {
       if (data && data.cameraId) {
+        console.log(`Remote flash: ${data.cameraId} on=${data.on}`);
+        io.to(`camera:${data.cameraId}`).emit('remote:flash', { on: data.on, from: socket.id });
+      }
+    });
+
+    socket.on('remote:switch', (data) => {
+      if (data && data.cameraId) {
+        console.log(`Remote switch: ${data.cameraId}`);
         io.to(`camera:${data.cameraId}`).emit('remote:switch', { from: socket.id });
       }
     });
 
-    socket.on('camera:flash', (data) => {
+    socket.on('remote:alarm', (data) => {
       if (data && data.cameraId) {
-        io.to(`camera:${data.cameraId}`).emit('remote:flash', { on: data.on, from: socket.id });
+        console.log(`Remote alarm: ${data.cameraId}`);
+        io.to(`camera:${data.cameraId}`).emit('remote:alarm', { from: socket.id });
       }
     });
 
@@ -97,10 +92,7 @@ function setupSignaling(io) {
 
     socket.on('camera:battery', (data) => {
       if (data && data.cameraId) {
-        io.to(`watchers:${data.cameraId}`).emit('camera:battery', {
-          cameraId: data.cameraId,
-          level: data.level
-        });
+        io.to(`watchers:${data.cameraId}`).emit('camera:battery', { cameraId: data.cameraId, level: data.level });
       }
     });
 

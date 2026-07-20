@@ -318,11 +318,11 @@ function toggleFlash() {
   flashOn = !flashOn;
   $('btnFlash').className = flashOn ? 'ctrl-btn green active' : 'ctrl-btn dark';
   $('btnFlash').querySelector('.icon').textContent = flashOn ? '🔦' : '🔦';
-  if (socket && currentCamId) socket.emit('camera:flash', { cameraId: currentCamId, on: flashOn });
+  if (socket && currentCamId) socket.emit('remote:flash', { cameraId: currentCamId, on: flashOn });
 }
 
 function switchCam() {
-  if (socket && currentCamId) socket.emit('camera:switch', { cameraId: currentCamId });
+  if (socket && currentCamId) socket.emit('remote:switch', { cameraId: currentCamId });
 }
 
 function toggleAudio() {
@@ -333,7 +333,7 @@ function toggleAudio() {
 
 function sendAlarm() {
   if (socket && currentCamId) {
-    socket.emit('camera:alarm', { cameraId: currentCamId, message: 'Alarm vom iPhone!' });
+    socket.emit('remote:alarm', { cameraId: currentCamId, message: 'Alarm vom iPhone!' });
     showEvent('🚨 Alarm gesendet!', 'An Kamera gesendet');
     if (navigator.vibrate) navigator.vibrate(500);
   }
