@@ -4,11 +4,13 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.graphics.Matrix
-import android.os.BatteryManager
 import android.graphics.ImageFormat
+import android.graphics.Rect
+import android.graphics.YuvImage
+import android.media.Image
+import android.media.ImageReader
+import android.os.BatteryManager
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
@@ -17,7 +19,6 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
-import androidx.camera.core.ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
@@ -34,6 +35,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -47,6 +49,11 @@ class CameraActivity : AppCompatActivity() {
     private var cameraProvider: ProcessCameraProvider? = null
     private lateinit var cameraExecutor: ExecutorService
     private var batteryLevel = 0
+    private var imageCapture: ImageCapture? = null
+    private var imageAnalysis: ImageAnalysis? = null
+    private var frameTimer: android.os.Handler? = null
+    private var isStreaming = false
+    private var imageReader: ImageReader? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,10 +78,7 @@ class CameraActivity : AppCompatActivity() {
         findViewById<Button>(R.id.stopButton).setOnClickListener { stop() }
         findViewById<Button>(R.id.qrButton).setOnClickListener { showQRCode() }
 
-        android.os.Handler(mainLooper).post(object : Runnable {
-            override fun run() { updateBattery(); android.os.Handler(mainLooper).postDelayed(this, 30000) }
-        })
-
+        frameTimer = android.os.Handler(mainLooper)
         requestPermissions()
     }
 
@@ -129,41 +133,55 @@ class CameraActivity : AppCompatActivity() {
                     findViewById<TextView>(R.id.statusText).setTextColor(Color.parseColor("#22c55e"))
                 }
                 socket?.emit("camera:join", cameraId)
+                updateBattery()
             }
 
             socket?.on("watcher:joined") {
                 viewerCount++
-                runOnUiThread { findViewById<TextView>(R.id.viewersText).text = "Zuschauer: $viewerCount" }
+                runOnUiThread {
+                    findViewById<TextView>(R.id.viewersText).text = "Zuschauer: $viewerCount"
+                }
+                startStreaming()
             }
 
             socket?.on("watcher:left") {
                 viewerCount = (viewerCount - 1).coerceAtLeast(0)
-                runOnUiThread { findViewById<TextView>(R.id.viewersText).text = "Zuschauer: $viewerCount" }
+                runOnUiThread {
+                    findViewById<TextView>(R.id.viewersText).text = "Zuschauer: $viewerCount"
+                }
+                if (viewerCount == 0) stopStreaming()
             }
 
-            // REMOTE COMMANDS from iPhone
             socket?.on("remote:flash") { args ->
                 try {
                     val data = args[0] as JSONObject
                     val on = data.optBoolean("on", true)
                     runOnUiThread {
-                        try { camera?.cameraControl?.enableTorch(on); Toast.makeText(this, if (on) "Licht AN" else "Licht AUS", Toast.LENGTH_SHORT).show() } catch (_: Exception) {}
+                        try {
+                            camera?.cameraControl?.enableTorch(on)
+                            Toast.makeText(this@CameraActivity,
+                                if (on) "Licht AN" else "Licht AUS", Toast.LENGTH_SHORT).show()
+                        } catch (_: Exception) {}
                     }
                 } catch (_: Exception) {}
             }
 
             socket?.on("remote:switch") {
-                runOnUiThread { switchCamera(); Toast.makeText(this, "Kamera gewechselt", Toast.LENGTH_SHORT).show() }
+                runOnUiThread { switchCamera() }
             }
 
             socket?.on("remote:alarm") {
-                runOnUiThread { triggerAlarmLocal(); Toast.makeText(this, "ALARM empfangen!", Toast.LENGTH_SHORT).show() }
+                runOnUiThread {
+                    triggerAlarmLocal()
+                    Toast.makeText(this@CameraActivity, "ALARM empfangen!", Toast.LENGTH_SHORT).show()
+                }
             }
 
             socket?.on(Socket.EVENT_DISCONNECT) {
                 runOnUiThread {
                     findViewById<TextView>(R.id.statusText).text = "● Getrennt"
                     findViewById<TextView>(R.id.statusText).setTextColor(Color.parseColor("#ef4444"))
+                    stopStreaming()
                 }
             }
 
@@ -173,82 +191,145 @@ class CameraActivity : AppCompatActivity() {
 
     private fun startCamera() {
         val future = ProcessCameraProvider.getInstance(this)
-        future.addListener({ cameraProvider = future.get(); bindCamera() }, ContextCompat.getMainExecutor(this))
+        future.addListener({
+            cameraProvider = future.get()
+            bindCamera()
+        }, ContextCompat.getMainExecutor(this))
     }
 
     private fun bindCamera() {
         val provider = cameraProvider ?: return
         val previewView = findViewById<PreviewView>(R.id.previewView)
-        val preview = Preview.Builder().build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
-
-        val imageAnalysis = ImageAnalysis.Builder()
-            .setTargetResolution(android.util.Size(640, 480))
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .build()
-
-        imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
-            if (viewerCount > 0 && socket?.connected() == true && cameraId.isNotEmpty()) {
-                try {
-                    val bitmap = toBitmap(imageProxy)
-                    if (bitmap != null) {
-                        val scaled = Bitmap.createScaledBitmap(bitmap, 480, 360, true)
-                        val out = ByteArrayOutputStream()
-                        scaled.compress(Bitmap.CompressFormat.JPEG, 40, out)
-                        val b64 = Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
-
-                        socket?.emit("camera:frame", JSONObject().apply {
-                            put("cameraId", cameraId)
-                            put("frame", b64)
-                        })
-
-                        scaled.recycle()
-                        bitmap.recycle()
-                    }
-                } catch (e: Exception) {
-                    Log.e("Camera", "Frame error: ${e.message}")
-                }
-            }
-            imageProxy.close()
+        val preview = Preview.Builder().build().also {
+            it.setSurfaceProvider(previewView.surfaceProvider)
         }
 
-        val selector = if (useFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
-        try { provider.unbindAll(); camera = provider.bindToLifecycle(this, selector, preview, imageAnalysis) }
-        catch (e: Exception) {
-            try { provider.unbindAll(); camera = provider.bindToLifecycle(this, selector, preview) } catch (_: Exception) {}
+        imageCapture = ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .setTargetResolution(android.util.Size(1280, 720))
+            .build()
+
+        val selector = if (useFrontCamera)
+            CameraSelector.DEFAULT_FRONT_CAMERA
+        else
+            CameraSelector.DEFAULT_BACK_CAMERA
+
+        try {
+            provider.unbindAll()
+            camera = provider.bindToLifecycle(this, selector, preview, imageCapture)
+        } catch (e: Exception) {
+            Log.e("Camera", "Bind failed: ${e.message}")
+            try {
+                provider.unbindAll()
+                camera = provider.bindToLifecycle(this, selector, preview)
+            } catch (_: Exception) {}
         }
     }
 
-    private fun toBitmap(imageProxy: ImageProxy): Bitmap? {
-        try {
-            val buffer = imageProxy.planes[0].buffer
-            val bytes = ByteArray(buffer.remaining())
-            buffer.get(bytes)
+    private fun startStreaming() {
+        if (isStreaming) return
+        isStreaming = true
+        frameTimer?.postDelayed(frameRunnable, 200)
+    }
 
-            // Try direct JPEG if available
-            if (imageProxy.format == ImageFormat.JPEG) {
-                return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    private fun stopStreaming() {
+        isStreaming = false
+        frameTimer?.removeCallbacks(frameRunnable)
+    }
+
+    private val frameRunnable = object : Runnable {
+        override fun run() {
+            if (!isStreaming || socket?.connected() != true || viewerCount <= 0) return
+            captureAndSendFrame()
+            frameTimer?.postDelayed(this, 150) // ~7 FPS
+        }
+    }
+
+    private fun captureAndSendFrame() {
+        val capture = imageCapture ?: return
+        try {
+            capture.takePicture(cameraExecutor, object : ImageCapture.OnImageCapturedCallback() {
+                override fun onCaptureSuccess(imageProxy: ImageProxy) {
+                    try {
+                        val jpegBytes = yuv420ToJpeg(imageProxy)
+                        if (jpegBytes != null && jpegBytes.isNotEmpty()) {
+                            val b64 = Base64.encodeToString(jpegBytes, Base64.NO_WRAP)
+                            socket?.emit("camera:frame", JSONObject().apply {
+                                put("cameraId", cameraId)
+                                put("frame", b64)
+                            })
+                        }
+                    } catch (e: Exception) {
+                        Log.e("Camera", "Frame send error: ${e.message}")
+                    } finally {
+                        imageProxy.close()
+                    }
+                }
+
+                override fun onError(exception: ImageCaptureException) {
+                    Log.e("Camera", "Capture error: ${exception.message}")
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("Camera", "Capture failed: ${e.message}")
+        }
+    }
+
+    /**
+     * Properly convert YUV_420_888 ImageProxy to JPEG byte array.
+     * This is the correct way - the previous BitmapFactory approach produced
+     * green screens because it tried to decode YUV data as JPEG.
+     */
+    private fun yuv420ToJpeg(imageProxy: ImageProxy): ByteArray? {
+        try {
+            val image: Image = imageProxy.image ?: return null
+            val width = image.width
+            val height = image.height
+
+            val yBuffer: ByteBuffer = image.planes[0].buffer
+            val uBuffer: ByteBuffer = image.planes[1].buffer
+            val vBuffer: ByteBuffer = image.planes[2].buffer
+
+            val yRowStride = image.planes[0].rowStride
+            val uvRowStride = image.planes[1].rowStride
+            val uvPixelStride = image.planes[1].pixelStride
+
+            // Build NV21 byte array: Y plane + interleaved V,U planes
+            val nv21Size = width * height + (width * height / 2)
+            val nv21 = ByteArray(nv21Size)
+
+            // Copy Y plane
+            var pos = 0
+            if (yRowStride == width) {
+                // No padding, direct copy
+                yBuffer.position(0)
+                yBuffer.get(nv21, 0, width * height)
+                pos = width * height
+            } else {
+                // Row by row copy (handles padding)
+                for (row in 0 until height) {
+                    yBuffer.position(row * yRowStride)
+                    yBuffer.get(nv21, pos, width)
+                    pos += width
+                }
             }
 
-            // YUV_420_888 to NV21 conversion
-            val yBuffer = imageProxy.planes[0].buffer
-            val uBuffer = imageProxy.planes[1].buffer
-            val vBuffer = imageProxy.planes[2].buffer
+            // Interleave V and U planes for NV21 format
+            for (row in 0 until height / 2) {
+                for (col in 0 until width / 2) {
+                    val uvIndex = row * uvRowStride + col * uvPixelStride
+                    nv21[pos++] = vBuffer.get(uvIndex)
+                    nv21[pos++] = uBuffer.get(uvIndex)
+                }
+            }
 
-            val ySize = yBuffer.remaining()
-            val uSize = uBuffer.remaining()
-            val vSize = vBuffer.remaining()
-
-            val nv21 = ByteArray(ySize + uSize + vSize)
-            yBuffer.get(nv21, 0, ySize)
-            vBuffer.get(nv21, ySize, vSize)
-            uBuffer.get(nv21, ySize + vSize, uSize)
-
-            val yuvImage = android.graphics.YuvImage(nv21, ImageFormat.NV21, imageProxy.width, imageProxy.height, null)
+            // Convert NV21 to JPEG
+            val yuvImage = YuvImage(nv21, ImageFormat.NV21, width, height, null)
             val out = ByteArrayOutputStream()
-            yuvImage.compressToJpeg(android.graphics.Rect(0, 0, imageProxy.width, imageProxy.height), 40, out)
-            return BitmapFactory.decodeByteArray(out.toByteArray(), 0, out.size())
+            yuvImage.compressToJpeg(Rect(0, 0, width, height), 60, out)
+            return out.toByteArray()
         } catch (e: Exception) {
-            Log.e("Camera", "toBitmap error: ${e.message}")
+            Log.e("Camera", "YUV conversion error: ${e.message}")
             return null
         }
     }
@@ -256,19 +337,27 @@ class CameraActivity : AppCompatActivity() {
     private fun switchCamera() {
         useFrontCamera = !useFrontCamera
         bindCamera()
+        Toast.makeText(this,
+            if (useFrontCamera) "Frontkamera" else "Rückkamera",
+            Toast.LENGTH_SHORT).show()
     }
 
     private fun toggleFlash() {
         try {
             val on = camera?.cameraInfo?.torchState?.value != 1
             camera?.cameraControl?.enableTorch(on)
-            Toast.makeText(this, if (on) "Licht AN" else "Licht AUS", Toast.LENGTH_SHORT).show()
-        } catch (_: Exception) { Toast.makeText(this, "Blitz nicht verfügbar", Toast.LENGTH_SHORT).show() }
+            Toast.makeText(this,
+                if (on) "Licht AN" else "Licht AUS",
+                Toast.LENGTH_SHORT).show()
+        } catch (_: Exception) {}
     }
 
     private fun triggerAlarm() {
         triggerAlarmLocal()
-        socket?.emit("camera:alarm", JSONObject().apply { put("cameraId", cameraId); put("message", "ALARM!") })
+        socket?.emit("camera:alarm", JSONObject().apply {
+            put("cameraId", cameraId)
+            put("message", "ALARM!")
+        })
     }
 
     private fun triggerAlarmLocal() {
@@ -285,23 +374,37 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun showQRCode() {
-        if (cameraId.isEmpty()) { Toast.makeText(this, "Kamera wird verbunden...", Toast.LENGTH_SHORT).show(); return }
-        val serverUrl = ts.getServerUrl() ?: return
-        val token = ts.getAccessToken() ?: return
-        val qrData = JSONObject().apply { put("server", serverUrl); put("camera", cameraId); put("token", token) }.toString()
+        if (cameraId.isEmpty()) return
+        val qrData = JSONObject().apply {
+            put("server", ts.getServerUrl() ?: "")
+            put("camera", cameraId)
+            put("token", ts.getAccessToken() ?: "")
+        }.toString()
         val qrBitmap = generateQRCode(qrData, 500)
-        val dv = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(32, 32, 32, 32); setBackgroundColor(Color.parseColor("#1e293b")) }
-        dv.addView(TextView(this).apply { text = "QR-Code scannen"; setTextColor(Color.WHITE); textSize = 18f; setPadding(0, 0, 0, 16); gravity = Gravity.CENTER })
+        val dv = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(32, 32, 32, 32)
+            setBackgroundColor(Color.parseColor("#1e293b"))
+        }
+        dv.addView(TextView(this).apply {
+            text = "QR-Code scannen"
+            setTextColor(Color.WHITE)
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 16)
+        })
         dv.addView(ImageView(this).apply { setImageBitmap(qrBitmap) })
-        dv.addView(TextView(this).apply { text = "Zuschauer-App -> QR Scan"; setTextColor(Color.parseColor("#94a3b8")); textSize = 14f; gravity = Gravity.CENTER; setPadding(0, 12, 0, 0) })
         AlertDialog.Builder(this).setView(dv).setPositiveButton("OK", null).show()
     }
 
     private fun generateQRCode(data: String, size: Int): Bitmap {
         val bm = QRCodeWriter().encode(data, BarcodeFormat.QR_CODE, size, size)
-        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565)
-        for (x in 0 until size) for (y in 0 until size) bitmap.setPixel(x, y, if (bm[x, y]) Color.BLACK else Color.WHITE)
-        return bitmap
+        val b = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565)
+        for (x in 0 until size)
+            for (y in 0 until size)
+                b.setPixel(x, y, if (bm[x, y]) Color.BLACK else Color.WHITE)
+        return b
     }
 
     private fun updateBattery() {
@@ -310,12 +413,29 @@ class CameraActivity : AppCompatActivity() {
             val l = it.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
             val s = it.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
             batteryLevel = if (s > 0) (l * 100 / s) else 0
-            runOnUiThread { findViewById<TextView>(R.id.batteryText).text = "Batterie: $batteryLevel%" }
-            if (socket?.connected() == true && cameraId.isNotEmpty())
-                socket?.emit("camera:battery", JSONObject().apply { put("cameraId", cameraId); put("level", batteryLevel) })
+            runOnUiThread {
+                findViewById<TextView>(R.id.batteryText).text = "Batterie: $batteryLevel%"
+            }
+            if (socket?.connected() == true && cameraId.isNotEmpty()) {
+                socket?.emit("camera:battery", JSONObject().apply {
+                    put("cameraId", cameraId)
+                    put("level", batteryLevel)
+                })
+            }
         }
     }
 
-    private fun stop() { socket?.emit("camera:leave", cameraId); socket?.disconnect(); finish() }
-    override fun onDestroy() { super.onDestroy(); socket?.disconnect(); cameraExecutor.shutdown() }
+    private fun stop() {
+        stopStreaming()
+        socket?.emit("camera:leave", cameraId)
+        socket?.disconnect()
+        finish()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        stopStreaming()
+        socket?.disconnect()
+        cameraExecutor.shutdown()
+    }
 }
