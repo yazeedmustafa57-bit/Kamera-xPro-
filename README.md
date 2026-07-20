@@ -1,45 +1,61 @@
-# SmartCam Pro v3.0 - Professionelle Multi-User Sicherheitsplattform
+# SmartCam Pro v3.3 - Professionelle Sicherheitsplattform
 
 ## APK Download
-🔗 https://raw.githubusercontent.com/yazeedmustafa57-bit/Kamera-xPro-/main/SmartCamPro.apk
+🔗 https://raw.githubusercontent.com/yazeedmustafa57-bit/Kamera-xPro-/main/SmartCamPro-v3.3.apk
 
-## Architektur (wie AlfredCamera)
+## Quick Start
+1. APK installieren
+2. E-Mail + Passwort eingeben (Server-URL ist bereits vorausgefüllt)
+3. Registrieren oder Anmelden
+4. "Kamera-Modus" wählen → altes Handy wird zur Überwachungskamera
+5. Auf iPhone/anderem Handy: Gleichen Account einloggen → "Zuschauer" wählen → Live-Stream ansehen
+
+## Features
+- 📷 Live-HD-Video (1280x720) via Socket.IO
+- 🔦 Taschenlampe remote ein/ausschalten
+- 🔄 Kamera wechseln (Front/Rück) remote
+- 🚨 Alarm auslösen (vibration + LED blink)
+- 📱 QR-Code zum Verbinden
+- 🔐 JWT Auth mit verschlüsselten Tokens
+- 🔋 Batteriestatus-Anzeige
+- 👥 Zuschauer-Anzeige
+- 🌐 Web-Zuschauer (iPhone/Safari nutzbar)
+
+## So funktioniert es
 ```
-Kamera-Geraet → HTTPS/WSS → Backend Server → HTTPS/WSS → Zuschauer-Geraet
-                                │
-                          WebRTC P2P
-                          (direkt zwischen Geraeten)
+Kamera-Handy (Android)  →  Cloud-Server  →  Zuschauer (iPhone/Android/Web)
+  CameraX + Socket.IO       Express+WS        Socket.IO Viewer
 ```
 
-## Backend (Node.js + PostgreSQL)
+## Technologien
+- **Backend:** Node.js + Express + Socket.IO
+- **Datenbank:** JSON-File (data.json)
+- **Auth:** JWT + bcrypt
+- **Android:** Kotlin + CameraX + Socket.IO
+- **Web:** HTML5 + Socket.IO Client
+- **Tunnel:** Cloudflare Quick Tunnel
+
+## Sicherheit
+- Passwörter: bcrypt (12 Runden)
+- Tokens: JWT mit Owner-ID Filterung
+- API: Nur authentifizierte Zugriffe
+- Server: CORS + Helmet
+
+## Server starten
 ```bash
 cd backend
 npm install
-# PostgreSQL Datenbank einrichten
-# .env.example kopieren und ausfuellen
-npm start
+PORT=3000 node src/server.js
 ```
 
-## Features
-- ☁️ Cloud-Streaming (ueberall zugaenglich)
-- 🔐 JWT Auth mit Refresh Tokens
-- 📷 Live-Video mit CameraX
-- 🚶 KI-Bewegungserkennung
-- 🚨 Alarm-Sirene
-- 📱 QR-Code Pairing
-- 🔐 Verschluesselte Token-Speicherung
-- 💰 Subscription-System
+## Changelog
+### v3.3 (2026-07-20)
+- FIX: Grüner Bildschirm behoben (korrekte YUV→JPEG Konvertierung)
+- FIX: HD-Qualität (1280x720, JPEG Quality 60)
+- FIX: Remote-Flash, Remote-Switch, Remote-Alarm von iPhone
+- UPDATE: Server-URL aktualisiert
 
-## Sicherheit
-- Passwoerter: bcrypt (12 Runden)
-- Tokens: EncryptedSharedPreferences
-- API: JWT + Owner-ID Filterung
-- Server: Rate Limiting + Helmet
-- Transport: HTTPS/WSS
-
-## Technologien
-- Backend: Node.js + Express + PostgreSQL
-- Realtime: Socket.IO
-- Auth: JWT + bcrypt
-- Android: Kotlin + Retrofit + CameraX
-- WebRTC: Socket.IO Signaling (P2P bereit)
+### v3.2
+- Multi-User System (Registrierung/Login)
+- Remote-Controls (Flash, Switch, Alarm)
+- Web-Zuschauer für iPhone
