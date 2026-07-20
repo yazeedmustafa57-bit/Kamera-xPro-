@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SmartCam Pro</title>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;color:#fff;min-height:100vh;overflow-x:hidden}
+.screen{display:none;padding:20px;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+
+/* Login */
+.login-screen{justify-content:center;align-items:center}
+.logo{font-size:64px;margin-bottom:16px}
+.app-title{font-size:28px;font-weight:bold;margin-bottom:4px}
+.app-sub{font-size:14px;color:#64748b;margin-bottom:32px}
+.input{width:100%;max-width:360px;padding:14px 16px;background:#1e293b;border:1px solid #334155;border-radius:12px;color:#fff;font-size:16px;margin-bottom:12px;outline:none}
+.input:focus{border-color:#6366f1}
+.btn{width:100%;max-width:360px;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer;margin-bottom:12px}
+.btn-primary{background:#6366f1;color:#fff}
+.btn-green{background:#22c55e;color:#fff}
+.btn-red{background:#ef4444;color:#fff}
+.btn-dark{background:#1e293b;color:#94a3b8;border:1px solid #334155}
+.btn:active{opacity:0.8;transform:scale(0.98)}
+.error{color:#ef4444;font-size:13px;text-align:center;margin-top:8px}
+.tab-row{display:flex;gap:8px;width:100%;max-width:360px;margin-bottom:16px}
+
+/* Home */
+.home-screen .header{background:#1e293b;padding:16px;border-radius:12px;margin-bottom:16px}
+.home-screen .header h2{font-size:18px;margin-bottom:4px}
+.home-screen .header p{font-size:12px;color:#64748b}
+.card{background:#1e293b;border-radius:12px;padding:20px;margin-bottom:12px}
+.card h3{font-size:16px;margin-bottom:8px}
+.card p{font-size:13px;color:#94a3b8}
+
+/* Cameras */
+.camera-card{background:#1e293b;border-radius:12px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.status-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.status-online{background:#22c55e}
+.status-offline{background:#64748b}
+.camera-info{flex:1}
+.camera-name{font-size:16px;font-weight:bold}
+.camera-status{font-size:13px}
+.camera-actions{display:flex;gap:8px}
+.btn-sm{padding:8px 16px;border:none;border-radius:8px;font-size:13px;font-weight:bold;cursor:pointer}
+.btn-sm:active{opacity:0.8}
+
+/* Live View */
+.live-header{text-align:center;padding:20px 0}
+.live-icon{font-size:64px;margin-bottom:12px}
+.live-name{font-size:22px;font-weight:bold;margin-bottom:8px}
+.live-status{font-size:16px;font-weight:bold;padding:8px 20px;border-radius:20px;display:inline-block}
+.live-status.online{background:#166534;color:#22c55e}
+.live-status.offline{background:#1e293b;color:#64748b}
+.live-status.alarm{background:#7f1d1d;color:#ef4444;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.live-actions{display:flex;gap:12px;margin-top:24px;justify-content:center;flex-wrap:wrap}
+.event-list{margin-top:24px;width:100%}
+.event-item{background:#1e293b;border-radius:8px;padding:12px;margin-bottom:8px;font-size:13px}
+.event-time{color:#64748b;font-size:11px}
+.event-type{color:#f59e0b;font-weight:bold}
+.event-alarm{color:#ef4444;font-weight:bold}
+
+/* QR Scanner placeholder */
+.qr-section{text-align:center;margin-top:20px;padding:20px;background:#1e293b;border-radius:12px}
+.qr-section p{color:#94a3b8;font-size:14px;margin-top:8px}
+
+/* Toast */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none;border:1px solid #334155}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="loginScreen" class="screen login-screen active">
+  <div class="logo">📹</div>
+  <div class="app-title">SmartCam Pro</div>
+  <div class="app-sub">Sicherheits-Kamera System</div>
+  
+  <input id="loginEmail" class="input" type="email" placeholder="E-Mail" autocomplete="email">
+  <input id="loginPass" class="input" type="password" placeholder="Passwort" autocomplete="current-password">
+  <input id="loginName" class="input" type="text" placeholder="Anzeigename (nur bei Registrierung)" style="display:none">
+  
+  <div class="tab-row">
+    <button class="btn btn-primary" onclick="login()" id="loginBtn">Anmelden</button>
+    <button class="btn btn-dark" onclick="toggleRegister()" id="regBtn">Registrieren</button>
+  </div>
+  <div id="loginError" class="error"></div>
+</div>
+
+<!-- Home Screen -->
+<div id="homeScreen" class="screen">
+  <div class="header">
+    <h2>SmartCam Pro</h2>
+    <p id="homeUser"></p>
+  </div>
+  
+  <div class="card" onclick="showCameras()">
+    <h3>📷 Kameras</h3>
+    <p id="cameraCount">Lade Kameras...</p>
+  </div>
+  
+  <div class="card">
+    <h3>📊 Status</h3>
+    <p id="serverStatus">Verbunden</p>
+  </div>
+  
+  <button class="btn btn-dark" onclick="logout()" style="margin-top:20px">Abmelden</button>
+</div>
+
+<!-- Cameras Screen -->
+<div id="camerasScreen" class="screen">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <button class="btn-sm btn-dark" onclick="showHome()" style="padding:10px 14px">←</button>
+    <h2 style="font-size:20px">Meine Kameras</h2>
+  </div>
+  <div id="cameraList"></div>
+  <div id="emptyCameras" style="display:none;text-align:center;padding:40px 0">
+    <div style="font-size:48px;margin-bottom:16px">📷</div>
+    <p style="font-size:16px;font-weight:bold;margin-bottom:8px">Keine Kameras</p>
+    <p style="font-size:14px;color:#64748b">Starte eine Kamera auf einem Android-Gerät</p>
+  </div>
+</div>
+
+<!-- Live View Screen -->
+<div id="liveScreen" class="screen">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <button class="btn-sm btn-dark" onclick="leaveLive()" style="padding:10px 14px">←</button>
+    <h2 style="font-size:20px" id="liveTitle">Live</h2>
+  </div>
+  <div class="live-header">
+    <div class="live-icon">📹</div>
+    <div class="live-name" id="liveName">Kamera</div>
+    <div id="liveStatusBadge" class="live-status offline">Verbinde...</div>
+  </div>
+  <div class="live-actions">
+    <button class="btn-sm btn-red" onclick="sendAlarm()" style="padding:12px 24px;font-size:15px">🚨 ALARM</button>
+  </div>
+  <div class="event-list" id="eventList"></div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+const API = window.location.origin;
+let token = localStorage.getItem('sc_token') || '';
+let refreshToken = localStorage.getItem('sc_refresh') || '';
+let userId = localStorage.getItem('sc_user_id') || '';
+let userName = localStorage.getItem('sc_user_name') || '';
+let isRegister = false;
+let socket = null;
+let currentCameraId = '';
+let cameras = [];
+
+// Init
+if (token && userId) {
+  showScreen('homeScreen');
+  document.getElementById('homeUser').textContent = 'Eingeloggt: ' + userName;
+  loadCameras();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function toggleRegister() {
+  isRegister = !isRegister;
+  document.getElementById('loginName').style.display = isRegister ? 'block' : 'none';
+  document.getElementById('loginBtn').textContent = isRegister ? 'Registrieren' : 'Anmelden';
+  document.getElementById('loginError').textContent = '';
+}
+
+async function login() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const name = document.getElementById('loginName').value.trim();
+  const err = document.getElementById('loginError');
+  
+  if (!email || !pass) { err.text = 'Bitte alles ausfüllen'; return; }
+  
+  try {
+    const url = isRegister ? '/api/auth/register' : '/api/auth/login';
+    const body = isRegister ? {email, password: pass, display_name: name || null} : {email, password: pass};
+    
+    const res = await fetch(API + url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    
+    if (!res.ok) { err.textContent = data.error || 'Fehler'; return; }
+    
+    token = data.accessToken;
+    refreshToken = data.refreshToken;
+    userId = data.user.id;
+    userName = data.user.displayName || data.user.display_name || email.split('@')[0];
+    
+    localStorage.setItem('sc_token', token);
+    localStorage.setItem('sc_refresh', refreshToken);
+    localStorage.setItem('sc_user_id', userId);
+    localStorage.setItem('sc_user_name', userName);
+    
+    document.getElementById('homeUser').textContent = 'Eingeloggt: ' + userName;
+    showScreen('homeScreen');
+    loadCameras();
+  } catch(e) {
+    err.textContent = 'Server nicht erreichbar';
+  }
+}
+
+function logout() {
+  token = ''; refreshToken = ''; userId = '';
+  localStorage.clear();
+  if (socket) socket.disconnect();
+  showScreen('loginScreen');
+}
+
+function showHome() { showScreen('homeScreen'); loadCameras(); }
+function showCameras() { showScreen('camerasScreen'); loadCameras(); }
+
+async function loadCameras() {
+  try {
+    const res = await fetch(API + '/api/cameras/', {
+      headers: {'Authorization': 'Bearer ' + token}
+    });
+    if (res.status === 401) { logout(); return; }
+    cameras = await res.json();
+    
+    const list = document.getElementById('cameraList');
+    const empty = document.getElementById('emptyCameras');
+    const count = document.getElementById('cameraCount');
+    
+    const online = cameras.filter(c => c.status === 'online').length;
+    count.textContent = online + '/' + cameras.length + ' online';
+    
+    if (cameras.length === 0) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    
+    empty.style.display = 'none';
+    list.innerHTML = cameras.map(c => `
+      <div class="camera-card">
+        <div class="status-dot ${c.status === 'online' ? 'status-online' : 'status-offline'}"></div>
+        <div class="camera-info">
+          <div class="camera-name">${esc(c.name)}</div>
+          <div class="camera-status" style="color:${c.status === 'online' ? '#22c55e' : '#64748b'}">
+            ${c.status === 'online' ? '● Live' : '● Offline'}
+          </div>
+        </div>
+        ${c.status === 'online' ? `<button class="btn-sm btn-green" onclick="joinLive('${c.id}','${esc(c.name)}')">Live</button>` : ''}
+      </div>
+    `).join('');
+  } catch(e) {
+    document.getElementById('cameraCount').textContent = 'Fehler beim Laden';
+  }
+}
+
+function joinLive(cameraId, cameraName) {
+  currentCameraId = cameraId;
+  document.getElementById('liveTitle').textContent = cameraName;
+  document.getElementById('liveName').textContent = cameraName;
+  document.getElementById('liveStatusBadge').className = 'live-status offline';
+  document.getElementById('liveStatusBadge').textContent = 'Verbinde...';
+  document.getElementById('eventList').innerHTML = '';
+  showScreen('liveScreen');
+  connectSocket(cameraId);
+}
+
+function connectSocket(cameraId) {
+  if (socket) { socket.disconnect(); socket = null; }
+  
+  socket = io(API, {
+    auth: { token: token },
+    reconnection: true,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 2000
+  });
+  
+  socket.on('connect', () => {
+    document.getElementById('liveStatusBadge').className = 'live-status online';
+    document.getElementById('liveStatusBadge').textContent = '● Verbunden';
+    socket.emit('watcher:join', cameraId);
+  });
+  
+  socket.on('camera:status', (data) => {
+    const badge = document.getElementById('liveStatusBadge');
+    if (data.status === 'online') {
+      badge.className = 'live-status online';
+      badge.textContent = '● Live';
+    } else {
+      badge.className = 'live-status offline';
+      badge.textContent = '● Offline';
+    }
+  });
+  
+  socket.on('camera:alarm', (data) => {
+    const badge = document.getElementById('liveStatusBadge');
+    badge.className = 'live-status alarm';
+    badge.textContent = '🚨 ALARM!';
+    addEvent('🚨 ALARM', data.message || 'Alarm ausgelöst!', data.timestamp);
+    showToast('🚨 ALARM empfangen!');
+    
+    // Play alarm sound
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 800;
+      osc.type = 'square';
+      gain.gain.value = 0.3;
+      osc.start();
+      setTimeout(() => { osc.stop(); ctx.close(); }, 2000);
+    } catch(e) {}
+    
+    // Vibrate if supported
+    if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+  });
+  
+  socket.on('camera:motion', (data) => {
+    addEvent('👁 Bewegung', data.type || 'Bewegung erkannt', data.timestamp);
+    showToast('Bewegung erkannt: ' + (data.type || ''));
+  });
+  
+  socket.on('disconnect', () => {
+    document.getElementById('liveStatusBadge').className = 'live-status offline';
+    document.getElementById('liveStatusBadge').textContent = '● Getrennt';
+  });
+}
+
+function sendAlarm() {
+  if (!socket || !currentCameraId) return;
+  socket.emit('camera:alarm', { cameraId: currentCameraId, message: 'Alarm vom Zuschauer!' });
+  showToast('🚨 Alarm an Kamera gesendet!');
+}
+
+function leaveLive() {
+  if (socket) { socket.emit('watcher:leave', currentCameraId); socket.disconnect(); socket = null; }
+  currentCameraId = '';
+  showScreen('camerasScreen');
+  loadCameras();
+}
+
+function addEvent(type, message, timestamp) {
+  const time = new Date(timestamp).toLocaleTimeString('de-DE');
+  const el = document.getElementById('eventList');
+  const item = document.createElement('div');
+  item.className = 'event-item';
+  item.innerHTML = `<div class="${type.includes('ALARM') ? 'event-alarm' : 'event-type'}">${type}</div><div>${esc(message)}</div><div class="event-time">${time}</div>`;
+  el.insertBefore(item, el.firstChild);
+  if (el.children.length > 20) el.removeChild(el.lastChild);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+</script>
+</body>
+</html>
